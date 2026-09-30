@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import valor_tipo, anexo_link %}
+{% block content %}
+<div class="titulo-pagina">
+  <h1>Painel</h1>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-success" href="{{ url_for('main.lancamento_form', tipo='entrada') }}"><i class="bi bi-plus-circle"></i> Entrada</a>
+    <a class="btn btn-danger" href="{{ url_for('main.lancamento_form', tipo='saida') }}"><i class="bi bi-dash-circle"></i> Saída</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('cad.nota_form') }}"><i class="bi bi-receipt"></i> Nota fiscal</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('cad.pagamento_form') }}"><i class="bi bi-wallet2"></i> Pagar funcionário</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body">
+    <div class="rotulo">Entradas no mês</div><div class="valor text-success">{{ resumo.entradas_mes|moeda }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body">
+    <div class="rotulo">Saídas no mês</div><div class="valor text-danger">{{ resumo.saidas_mes|moeda }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body">
+    <div class="rotulo">Resultado do mês</div><div class="valor {{ 'text-success' if resumo.saldo_mes >= 0 else 'text-danger' }}">{{ resumo.saldo_mes|moeda }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body">
+    <div class="rotulo">Saldo acumulado</div><div class="valor {{ 'text-success' if resumo.saldo_total >= 0 else 'text-danger' }}">{{ resumo.saldo_total|moeda }}</div>
+    <div class="small text-muted">Folha paga no mês: {{ folha_mes|moeda }} · {{ funcionarios_ativos }} funcionário(s) ativo(s)</div></div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card mb-3">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>Obras ativas</strong>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.obra_form') }}"><i class="bi bi-plus"></i> Nova obra</a>
+      </div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Obra</th><th class="text-end">Orçamento</th><th class="text-end">Recebido</th><th class="text-end">Gasto</th><th class="text-end">Saldo</th><th style="width:18%">Orçamento usado</th></tr></thead>
+          <tbody>
+          {% for o in obras %}
+            {% set t = totais.get(o.id, {'entrada': 0, 'saida': 0}) %}
+            {% set pct = (t.saida / o.orcamento * 100) if o.orcamento else 0 %}
+            <tr>
+              <td><a href="{{ url_for('main.obra_detalhe', id=o.id) }}">{{ o.nome }}</a><div class="small text-muted">{{ o.cliente }} · {{ o.status }}</div></td>
+              <td class="text-end">{{ o.orcamento|moeda }}</td>
+              <td class="text-end text-success">{{ t.entrada|moeda }}</td>
+              <td class="text-end text-danger">{{ t.saida|moeda }}</td>
+              <td class="text-end fw-semibold">{{ (t.entrada - t.saida)|moeda }}</td>
+              <td>{% if o.orcamento %}
+                <div class="progress"><div class="progress-bar {{ 'bg-danger' if pct > 100 else ('bg-warning' if pct > 85 else '') }}" style="width: {{ [pct, 100]|min }}%"></div></div>
+                <div class="small text-muted">{{ '%.0f'|format(pct) }}%</div>{% else %}<span class="small text-muted">sem orçamento</span>{% endif %}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma obra ativa. <a href="{{ url_for('main.obra_form') }}">Cadastre a primeira obra</a>.</td></tr>
+          {% endfor %}
+          <tr class="table-light">
+            <td>Empresa (geral / sem obra)</td><td></td>
+            <td class="text-end text-success">{{ geral.entrada|moeda }}</td>
+            <td class="text-end text-danger">{{ geral.saida|moeda }}</td>
+            <td class="text-end fw-semibold">{{ (geral.entrada - geral.saida)|moeda }}</td><td></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between"><strong>Últimos lançamentos</strong>
+        <a href="{{ url_for('main.financeiro') }}" class="small">ver todos</a></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <tbody>
+          {% for l in ultimos %}
+            <tr><td class="ps-3 text-nowrap">{{ l.data|data }}</td><td>{{ l.descricao }} {{ anexo_link(l) }}<div class="small text-muted">{{ l.categoria }}</div></td>
+              <td class="small">{{ l.obra.nome if l.obra else 'Empresa' }}</td><td class="text-end pe-3">{{ valor_tipo(l) }}</td></tr>
+          {% else %}
+            <tr><td class="text-center text-muted py-3">Nenhum lançamento ainda.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card">
+      <div class="card-header bg-white"><strong><i class="bi bi-alarm"></i> Contratos vencendo (30 dias)</strong></div>
+      <ul class="list-group list-group-flush">
+      {% for c in contratos_vencendo %}
+        <li class="list-group-item">
+          <a href="{{ url_for('cad.contrato_form', id=c.id) }}">{{ c.titulo }}</a>
+          <div class="small {{ 'text-danger' if c.data_fim < hoje else 'text-muted' }}">
+            {{ c.parte }} · {{ 'venceu' if c.data_fim < hoje else 'vence' }} em {{ c.data_fim|data }}</div>
+        </li>
+      {% else %}
+        <li class="list-group-item text-muted small">Nenhum contrato vencendo.</li>
+      {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

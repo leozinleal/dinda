@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="titulo-pagina">
+  <h1>Funcionários</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{{ url_for('cad.pagamento_form') }}"><i class="bi bi-wallet2"></i> Registrar pagamento</a>
+    <a class="btn btn-primary" href="{{ url_for('cad.funcionario_form') }}"><i class="bi bi-plus"></i> Novo funcionário</a>
+  </div>
+</div>
+<ul class="nav nav-pills mb-3">
+  {% for v, r in [('ativos', 'Ativos'), ('inativos', 'Inativos'), ('todos', 'Todos')] %}
+  <li class="nav-item"><a class="nav-link {{ 'active' if situacao == v }}" href="{{ url_for('cad.funcionarios', situacao=v) }}">{{ r }}</a></li>
+  {% endfor %}
+</ul>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Nome</th><th>Cargo</th><th>Contratação</th><th>Obra atual</th><th>Telefone</th><th class="text-end">Salário</th><th class="text-end">Total pago</th><th></th></tr></thead>
+    <tbody>
+    {% for f in funcionarios %}
+      <tr>
+        <td><a href="{{ url_for('cad.funcionario_detalhe', id=f.id) }}">{{ f.nome }}</a>{% if not f.ativo %} <span class="badge text-bg-secondary">inativo</span>{% endif %}</td>
+        <td>{{ f.cargo }}</td><td>{{ f.tipo_contratacao }}</td>
+        <td>{{ f.obra.nome if f.obra else '—' }}</td><td>{{ f.telefone }}</td>
+        <td class="text-end">{{ f.salario|moeda }}</td>
+        <td class="text-end">{{ pagos.get(f.id, 0)|moeda }}</td>
+        <td class="text-end"><a class="btn btn-sm btn-outline-success" href="{{ url_for('cad.pagamento_form', funcionario=f.id) }}" title="Pagar"><i class="bi bi-cash"></i> Pagar</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">Nenhum funcionário.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

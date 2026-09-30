@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, obra_select, anexo_input, valor_input %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar nota fiscal' if nota.id else 'Nova nota fiscal' }}</h1></div>
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    {{ csrf() }}
+    <div class="col-12">
+      <div class="btn-group" role="group">
+        <input type="radio" class="btn-check" name="tipo" id="t-ent" value="entrada" {{ 'checked' if nota.tipo != 'saida' }}>
+        <label class="btn btn-outline-warning" for="t-ent">Nota recebida (compra / despesa)</label>
+        <input type="radio" class="btn-check" name="tipo" id="t-sai" value="saida" {{ 'checked' if nota.tipo == 'saida' }}>
+        <label class="btn btn-outline-info" for="t-sai">Nota emitida (venda / serviço prestado)</label>
+      </div>
+    </div>
+    <div class="col-md-12">{{ anexo_input(nota, 'Arquivo da nota (PDF, XML ou foto)') }}</div>
+    <div class="col-md-4"><label class="form-label">Número *</label><input class="form-control" name="numero" value="{{ nota.numero or '' }}" required></div>
+    <div class="col-md-2"><label class="form-label">Série</label><input class="form-control" name="serie" value="{{ nota.serie or '' }}"></div>
+    <div class="col-md-3"><label class="form-label">Data de emissão *</label><input type="date" class="form-control" name="data_emissao" value="{{ nota.data_emissao or '' }}" required></div>
+    <div class="col-md-3"><label class="form-label">Valor total *</label>{{ valor_input(nota.valor) }}</div>
+    <div class="col-md-8"><label class="form-label">Fornecedor / Cliente</label><input class="form-control" name="parceiro" value="{{ nota.parceiro or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">CNPJ / CPF</label><input class="form-control" name="cpf_cnpj" value="{{ nota.cpf_cnpj or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Obra</label>{{ obra_select(obras, nota.obra_id) }}</div>
+    <div class="col-md-6"><label class="form-label">Descrição / itens</label><input class="form-control" name="descricao" value="{{ nota.descricao or '' }}" placeholder="Ex.: cimento, areia, ferragens"></div>
+
+    <div class="col-12"><div class="border rounded p-3 bg-light">
+      <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" role="switch" name="gerar_lancamento" id="gerar" value="1" {{ 'checked' if gerar }}>
+        <label class="form-check-label" for="gerar"><strong>Lançar no financeiro</strong>
+          <span class="text-muted small">(nota recebida vira uma saída; nota emitida vira uma entrada)</span></label>
+      </div>
+      <div class="row g-2">
+        <div class="col-md-6"><label class="form-label small">Categoria</label>
+          <select class="form-select" name="categoria"><option value="">— escolha —</option>
+            <optgroup label="Para nota recebida (saída)">{% for c in categorias_saida %}<option {{ 'selected' if categoria == c }}>{{ c }}</option>{% endfor %}</optgroup>
+            <optgroup label="Para nota emitida (entrada)">{% for c in categorias_entrada %}<option {{ 'selected' if categoria == c }}>{{ c }}</option>{% endfor %}</optgroup>
+          </select></div>
+        <div class="col-md-6"><label class="form-label small">Forma de pagamento</label>
+          <select class="form-select" name="forma_pagamento"><option value="">—</option>
+            {% for f in formas %}<option {{ 'selected' if forma == f }}>{{ f }}</option>{% endfor %}</select></div>
+      </div>
+    </div></div>
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_segura(request.args.get('voltar')) or url_for('cad.notas') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

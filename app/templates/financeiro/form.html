@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, obra_select, anexo_input, valor_input, categoria_select %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar lançamento' if l.id else ('Nova entrada' if l.tipo == 'entrada' else 'Nova saída') }}</h1></div>
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    {{ csrf() }}
+    <div class="col-12">
+      <div class="btn-group" role="group">
+        <input type="radio" class="btn-check" name="tipo" id="t-ent" value="entrada" {{ 'checked' if l.tipo == 'entrada' }}>
+        <label class="btn btn-outline-success" for="t-ent"><i class="bi bi-arrow-down-circle"></i> Entrada (dinheiro que entrou)</label>
+        <input type="radio" class="btn-check" name="tipo" id="t-sai" value="saida" {{ 'checked' if l.tipo != 'entrada' }}>
+        <label class="btn btn-outline-danger" for="t-sai"><i class="bi bi-arrow-up-circle"></i> Saída (dinheiro que saiu)</label>
+      </div>
+    </div>
+    <div class="col-md-8"><label class="form-label">Descrição *</label><input class="form-control" name="descricao" value="{{ l.descricao or '' }}" required placeholder="Ex.: Compra de cimento – Depósito São José"></div>
+    <div class="col-md-4"><label class="form-label">Valor *</label>{{ valor_input(l.valor) }}</div>
+    <div class="col-md-4"><label class="form-label">Data *</label><input type="date" class="form-control" name="data" value="{{ l.data or '' }}" required></div>
+    <div class="col-md-4"><label class="form-label">Categoria</label>{{ categoria_select(l.categoria, categorias_entrada, categorias_saida, 'input[name=tipo]') }}</div>
+    <div class="col-md-4"><label class="form-label">Forma de pagamento</label><select class="form-select" name="forma_pagamento"><option value="">—</option>
+      {% for f in formas %}<option {{ 'selected' if l.forma_pagamento == f }}>{{ f }}</option>{% endfor %}</select></div>
+    <div class="col-md-6"><label class="form-label">Obra</label>{{ obra_select(obras, l.obra_id) }}</div>
+    <div class="col-md-6">{{ anexo_input(l, 'Comprovante / recibo (opcional)') }}</div>
+    <div class="col-12 d-flex gap-2 flex-wrap">
+      <button class="btn btn-primary">Salvar</button>
+      {% if not l.id %}<button class="btn btn-outline-primary" name="continuar" value="1">Salvar e lançar outro</button>{% endif %}
+      <a class="btn btn-outline-secondary" href="{{ url_segura(request.args.get('voltar')) or url_for('main.financeiro') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

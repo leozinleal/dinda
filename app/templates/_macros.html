@@ -1,0 +1,72 @@
+{% macro csrf() %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro obra_select(obras, selecionada, name='obra_id', rotulo_vazio='Empresa (geral / sem obra)') %}
+<select class="form-select" name="{{ name }}" id="{{ name }}">
+  <option value="">{{ rotulo_vazio }}</option>
+  {% for o in obras %}
+  <option value="{{ o.id }}" {{ 'selected' if selecionada == o.id }}>{{ o.nome }}{% if o.status != 'Em andamento' %} ({{ o.status }}){% endif %}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
+{% macro filtro_obra(obras, valor) %}
+<select class="form-select" name="obra">
+  <option value="">Todas as obras</option>
+  <option value="geral" {{ 'selected' if valor == 'geral' }}>Empresa (geral / sem obra)</option>
+  {% for o in obras %}
+  <option value="{{ o.id }}" {{ 'selected' if valor == o.id|string }}>{{ o.nome }}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
+{% macro anexo_input(obj, rotulo='Anexar arquivo (PDF, foto, XML...)') %}
+<label class="form-label">{{ rotulo }}</label>
+<input type="file" class="form-control" name="arquivo">
+{% if obj.arquivo %}
+<div class="form-text">
+  Arquivo atual: <a href="{{ url_for('main.arquivo', nome=obj.arquivo) }}" target="_blank">{{ obj.arquivo_nome }}</a>
+  — envie outro para substituir, ou
+  <label class="ms-1"><input type="checkbox" name="remover_arquivo" value="1"> remover</label>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro anexo_link(obj) %}
+{% if obj.arquivo %}
+<a href="{{ url_for('main.arquivo', nome=obj.arquivo) }}" target="_blank" title="{{ obj.arquivo_nome }}"><i class="bi bi-paperclip"></i></a>
+{% endif %}
+{% endmacro %}
+
+{% macro botao_excluir(url, msg='Tem certeza que deseja excluir?', voltar=None) %}
+<form method="post" action="{{ url }}" class="d-inline" data-confirmar="{{ msg }}">
+  {{ csrf() }}
+  {% if voltar %}<input type="hidden" name="voltar" value="{{ voltar }}">{% endif %}
+  <button class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></button>
+</form>
+{% endmacro %}
+
+{% macro valor_tipo(l) %}
+<span class="{{ 'text-success' if l.tipo == 'entrada' else 'text-danger' }} fw-semibold text-nowrap">
+  {{ '+' if l.tipo == 'entrada' else '−' }} {{ l.valor|moeda }}
+</span>
+{% endmacro %}
+
+{% macro valor_input(valor, name='valor', required=True) %}
+<div class="input-group">
+  <span class="input-group-text">R$</span>
+  <input type="text" inputmode="decimal" class="form-control" name="{{ name }}"
+         value="{{ ('%.2f'|format(valor)).replace('.', ',') if valor else '' }}" placeholder="0,00" {{ 'required' if required }}>
+</div>
+{% endmacro %}
+
+{% macro categoria_select(atual, entrada, saida, tipo_seletor) %}
+<select class="form-select" name="categoria" data-categorias="{{ tipo_seletor }}">
+  <option value="">— escolha —</option>
+  <optgroup label="Categorias de entrada" data-tipo="entrada">
+    {% for c in entrada %}<option {{ 'selected' if atual == c }}>{{ c }}</option>{% endfor %}
+  </optgroup>
+  <optgroup label="Categorias de saída" data-tipo="saida">
+    {% for c in saida %}<option {{ 'selected' if atual == c }}>{{ c }}</option>{% endfor %}
+  </optgroup>
+</select>
+{% endmacro %}

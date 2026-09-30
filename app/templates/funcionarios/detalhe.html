@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import anexo_link, botao_excluir %}
+{% block content %}
+{% set aqui = url_for('cad.funcionario_detalhe', id=f.id) %}
+<div class="titulo-pagina">
+  <div><h1>{{ f.nome }}</h1><div class="text-muted">{{ f.cargo }} · {{ f.tipo_contratacao }}{% if not f.ativo %} · <span class="badge text-bg-secondary">inativo</span>{% endif %}</div></div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-success" href="{{ url_for('cad.pagamento_form', funcionario=f.id, voltar=aqui) }}"><i class="bi bi-cash"></i> Registrar pagamento</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('cad.funcionario_form', id=f.id) }}"><i class="bi bi-pencil"></i> Editar</a>
+    {{ botao_excluir(url_for('cad.funcionario_excluir', id=f.id), 'Excluir este funcionário?') }}
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4"><div class="card"><div class="card-body">
+    <dl class="mb-0">
+      <dt>CPF</dt><dd>{{ f.cpf or '—' }}</dd>
+      <dt>Telefone</dt><dd>{{ f.telefone or '—' }}</dd>
+      <dt>Salário / diária</dt><dd>{{ f.salario|moeda }}</dd>
+      <dt>Obra atual</dt><dd>{% if f.obra %}<a href="{{ url_for('main.obra_detalhe', id=f.obra.id) }}">{{ f.obra.nome }}</a>{% else %}—{% endif %}</dd>
+      <dt>Admissão</dt><dd>{{ f.data_admissao|data or '—' }}{% if f.data_demissao %} · Demissão: {{ f.data_demissao|data }}{% endif %}</dd>
+      <dt>PIX</dt><dd>{{ f.chave_pix or '—' }}</dd>
+      <dt>Dados bancários</dt><dd>{{ f.dados_bancarios or '—' }}</dd>
+      {% if f.observacoes %}<dt>Observações</dt><dd>{{ f.observacoes }}</dd>{% endif %}
+    </dl>
+  </div></div></div>
+  <div class="col-lg-8"><div class="card">
+    <div class="card-header bg-white d-flex justify-content-between"><strong>Pagamentos</strong><span>Total: <strong>{{ total|moeda }}</strong></span></div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Competência</th><th>Obra</th><th>Forma</th><th class="text-end">Valor</th><th></th></tr></thead>
+        <tbody>
+        {% for p in pagamentos %}
+          <tr><td>{{ p.data_pagamento|data }}</td><td>{{ p.tipo }} {{ anexo_link(p) }}</td><td>{{ p.competencia }}</td>
+            <td>{{ p.obra.nome if p.obra else 'Empresa' }}</td><td>{{ p.forma_pagamento }}</td><td class="text-end">{{ p.valor|moeda }}</td>
+            <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('cad.pagamento_form', id=p.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a>
+              {{ botao_excluir(url_for('cad.pagamento_excluir', id=p.id), 'Excluir este pagamento?', aqui) }}</td></tr>
+        {% else %}<tr><td colspan="7" class="text-center text-muted py-3">Nenhum pagamento registrado.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div></div>
+</div>
+{% endblock %}

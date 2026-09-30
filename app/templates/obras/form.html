@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, valor_input %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar obra' if obra.id else 'Nova obra' }}</h1></div>
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" class="row g-3">
+    {{ csrf() }}
+    <div class="col-md-8"><label class="form-label">Nome da obra *</label><input class="form-control" name="nome" value="{{ obra.nome or '' }}" required placeholder="Ex.: Residencial Jardim das Flores"></div>
+    <div class="col-md-4"><label class="form-label">Status</label><select class="form-select" name="status">
+      {% for s in status_opcoes %}<option {{ 'selected' if s == obra.status }}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="col-md-6"><label class="form-label">Cliente / contratante</label><input class="form-control" name="cliente" value="{{ obra.cliente or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Orçamento previsto</label>{{ valor_input(obra.orcamento, 'orcamento', required=False) }}</div>
+    <div class="col-12"><label class="form-label">Endereço</label><input class="form-control" name="endereco" value="{{ obra.endereco or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Data de início</label><input type="date" class="form-control" name="data_inicio" value="{{ obra.data_inicio or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Previsão de término</label><input type="date" class="form-control" name="previsao_termino" value="{{ obra.previsao_termino or '' }}"></div>
+    <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="3">{{ obra.observacoes or '' }}</textarea></div>
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('main.obra_detalhe', id=obra.id) if obra.id else url_for('main.obras') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import anexo_link, botao_excluir, filtro_obra %}
+{% block content %}
+{% set aqui = request.full_path %}
+<div class="titulo-pagina">
+  <h1>Pagamentos de funcionários</h1>
+  <a class="btn btn-primary" href="{{ url_for('cad.pagamento_form') }}"><i class="bi bi-plus"></i> Registrar pagamento</a>
+</div>
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-3"><select class="form-select" name="funcionario"><option value="">Todos os funcionários</option>
+    {% for f in funcionarios %}<option value="{{ f.id }}" {{ 'selected' if filtros.funcionario == f.id|string }}>{{ f.nome }}</option>{% endfor %}</select></div>
+  <div class="col-md-3">{{ filtro_obra(obras, filtros.obra) }}</div>
+  <div class="col-md-3"><input type="month" class="form-control" name="competencia" value="{{ filtros.competencia }}" title="Competência (mês de referência)"></div>
+  <div class="col-md-3 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-funnel"></i> Filtrar</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('cad.pagamentos') }}">Limpar</a></div>
+</div></form>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Data</th><th>Funcionário</th><th>Tipo</th><th>Competência</th><th>Obra</th><th>Forma</th><th class="text-end">Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for p in pagamentos %}
+      <tr>
+        <td>{{ p.data_pagamento|data }}</td>
+        <td><a href="{{ url_for('cad.funcionario_detalhe', id=p.funcionario.id) }}">{{ p.funcionario.nome }}</a> {{ anexo_link(p) }}</td>
+        <td>{{ p.tipo }}</td><td>{{ p.competencia }}</td>
+        <td>{{ p.obra.nome if p.obra else 'Empresa' }}</td><td>{{ p.forma_pagamento }}</td>
+        <td class="text-end">{{ p.valor|moeda }}</td>
+        <td class="text-end text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('cad.pagamento_form', id=p.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a>
+          {{ botao_excluir(url_for('cad.pagamento_excluir', id=p.id), 'Excluir este pagamento (e a saída no financeiro)?', aqui) }}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">Nenhum pagamento.</td></tr>
+    {% endfor %}
+    </tbody>
+    {% if pagamentos %}<tfoot><tr><th colspan="6" class="text-end">Total</th><th class="text-end">{{ total|moeda }}</th><th></th></tr></tfoot>{% endif %}
+  </table>
+</div></div>
+{% endblock %}

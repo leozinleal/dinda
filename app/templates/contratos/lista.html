@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import anexo_link, botao_excluir, filtro_obra %}
+{% block content %}
+{% set aqui = request.full_path %}
+<div class="titulo-pagina">
+  <h1>Contratos</h1>
+  <a class="btn btn-primary" href="{{ url_for('cad.contrato_form') }}"><i class="bi bi-plus"></i> Novo contrato</a>
+</div>
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-3"><select class="form-select" name="status"><option value="">Todos os status</option>
+    {% for s in status_opcoes %}<option {{ 'selected' if filtros.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+  <div class="col-md-3">{{ filtro_obra(obras, filtros.obra) }}</div>
+  <div class="col-md-4"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Título, parte, descrição..."></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button></div>
+</div></form>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Contrato</th><th>Tipo</th><th>Outra parte</th><th>Obra</th><th>Vigência</th><th>Status</th><th class="text-end">Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for c in contratos %}
+      <tr>
+        <td>{{ c.titulo }} {{ anexo_link(c) }}</td>
+        <td>{{ c.tipo }}</td>
+        <td>{{ c.parte }}<div class="small text-muted">{{ c.cpf_cnpj }}</div></td>
+        <td>{{ c.obra.nome if c.obra else 'Empresa' }}</td>
+        <td class="text-nowrap">{{ c.data_inicio|data }} – {{ c.data_fim|data or 'indeterminado' }}
+          {% if c.status == 'Vigente' and c.data_fim and c.data_fim < hoje %}<div class="small text-danger">vencido</div>{% endif %}</td>
+        <td><span class="badge {{ 'text-bg-success' if c.status == 'Vigente' else 'text-bg-secondary' }}">{{ c.status }}</span></td>
+        <td class="text-end">{{ c.valor|moeda }}</td>
+        <td class="text-end text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('cad.contrato_form', id=c.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a>
+          {{ botao_excluir(url_for('cad.contrato_excluir', id=c.id), 'Excluir este contrato?', aqui) }}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">Nenhum contrato.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, obra_select, valor_input %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar funcionário' if f.id else 'Novo funcionário' }}</h1></div>
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" class="row g-3">
+    {{ csrf() }}
+    <div class="col-md-8"><label class="form-label">Nome completo *</label><input class="form-control" name="nome" value="{{ f.nome or '' }}" required></div>
+    <div class="col-md-4"><label class="form-label">CPF</label><input class="form-control" name="cpf" value="{{ f.cpf or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Cargo / função</label><input class="form-control" name="cargo" value="{{ f.cargo or '' }}" placeholder="Pedreiro, servente, mestre de obras..."></div>
+    <div class="col-md-4"><label class="form-label">Tipo de contratação</label><select class="form-select" name="tipo_contratacao">
+      {% for t in tipos %}<option {{ 'selected' if f.tipo_contratacao == t }}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="form-label">Salário / valor da diária</label>{{ valor_input(f.salario, 'salario', required=False) }}</div>
+    <div class="col-md-4"><label class="form-label">Telefone</label><input class="form-control" name="telefone" value="{{ f.telefone or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Chave PIX</label><input class="form-control" name="chave_pix" value="{{ f.chave_pix or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Banco / agência / conta</label><input class="form-control" name="dados_bancarios" value="{{ f.dados_bancarios or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Admissão</label><input type="date" class="form-control" name="data_admissao" value="{{ f.data_admissao or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Demissão</label><input type="date" class="form-control" name="data_demissao" value="{{ f.data_demissao or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Obra onde trabalha</label>{{ obra_select(obras, f.obra_id, rotulo_vazio='— nenhuma / escritório —') }}</div>
+    <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="2">{{ f.observacoes or '' }}</textarea></div>
+    <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="ativo" id="ativo" value="1" {{ 'checked' if f.ativo }}>
+      <label class="form-check-label" for="ativo">Funcionário ativo</label></div>
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('cad.funcionario_detalhe', id=f.id) if f.id else url_for('cad.funcionarios') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

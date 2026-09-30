@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% set meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'] %}
+{% block content %}
+<div class="titulo-pagina">
+  <h1>Relatórios {{ ano }}</h1>
+  <div class="d-flex gap-2">
+    <form class="filtros"><select class="form-select" name="ano" onchange="this.form.submit()">
+      {% for a in anos %}<option {{ 'selected' if a == ano }}>{{ a }}</option>{% endfor %}</select></form>
+    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+  </div>
+</div>
+
+{% set tot_e = namespace(v=0) %}{% set tot_s = namespace(v=0) %}
+{% for m in range(1, 13) %}{% set tot_e.v = tot_e.v + mensal[m].entrada %}{% set tot_s.v = tot_s.v + mensal[m].saida %}{% endfor %}
+<div class="card mb-3">
+  <div class="card-header bg-white"><strong>Fluxo de caixa mês a mês</strong></div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th class="ps-3">Mês</th><th class="text-end">Entradas</th><th class="text-end">Saídas</th><th class="text-end">Resultado</th><th class="text-end pe-3">Acumulado no ano</th></tr></thead>
+      <tbody>
+      {% set acc = namespace(v=0) %}
+      {% for m in range(1, 13) %}
+        {% set r = mensal[m].entrada - mensal[m].saida %}{% set acc.v = acc.v + r %}
+        <tr><td class="ps-3">{{ meses[m-1] }}</td>
+          <td class="text-end text-success">{{ mensal[m].entrada|moeda }}</td>
+          <td class="text-end text-danger">{{ mensal[m].saida|moeda }}</td>
+          <td class="text-end fw-semibold {{ 'text-danger' if r < 0 }}">{{ r|moeda }}</td>
+          <td class="text-end pe-3 {{ 'text-danger' if acc.v < 0 }}">{{ acc.v|moeda }}</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr class="table-light"><th class="ps-3">Total</th><th class="text-end text-success">{{ tot_e.v|moeda }}</th><th class="text-end text-danger">{{ tot_s.v|moeda }}</th><th class="text-end">{{ (tot_e.v - tot_s.v)|moeda }}</th><th></th></tr></tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header bg-white"><strong>Por obra</strong></div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-sm mb-0">
+        <thead><tr><th class="ps-3">Obra</th><th class="text-end">Entradas</th><th class="text-end">Saídas</th><th class="text-end pe-3">Saldo</th></tr></thead>
+        <tbody>
+        {% for nome, t in por_obra %}
+          <tr><td class="ps-3">{{ nome }}</td><td class="text-end text-success">{{ t.entrada|moeda }}</td><td class="text-end text-danger">{{ t.saida|moeda }}</td><td class="text-end pe-3 fw-semibold">{{ (t.entrada - t.saida)|moeda }}</td></tr>
+        {% else %}<tr><td colspan="4" class="text-center text-muted py-3">Sem lançamentos no ano.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div></div>
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header bg-white"><strong>Por categoria</strong></div>
+    <div class="card-body">
+      <h3 class="h6 text-danger">Saídas</h3>
+      {% for c, v in saidas_cat %}
+        <div class="d-flex justify-content-between small"><span>{{ c }}</span><strong>{{ v|moeda }}</strong></div>
+        <div class="progress mb-2"><div class="progress-bar bg-danger" style="width: {{ (v / tot_s.v * 100) if tot_s.v else 0 }}%"></div></div>
+      {% else %}<p class="text-muted small">Nenhuma saída.</p>{% endfor %}
+      <h3 class="h6 text-success mt-3">Entradas</h3>
+      {% for c, v in entradas_cat %}
+        <div class="d-flex justify-content-between small"><span>{{ c }}</span><strong>{{ v|moeda }}</strong></div>
+        <div class="progress mb-2"><div class="progress-bar bg-success" style="width: {{ (v / tot_e.v * 100) if tot_e.v else 0 }}%"></div></div>
+      {% else %}<p class="text-muted small">Nenhuma entrada.</p>{% endfor %}
+    </div>
+  </div></div>
+</div>
+{% endblock %}

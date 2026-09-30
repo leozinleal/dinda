@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="titulo-pagina">
+  <h1>Obras</h1>
+  <a class="btn btn-primary" href="{{ url_for('main.obra_form') }}"><i class="bi bi-plus"></i> Nova obra</a>
+</div>
+<form class="filtros row g-2 mb-3">
+  <div class="col-auto"><select class="form-select" name="status" onchange="this.form.submit()">
+    <option value="">Todos os status</option>
+    {% for s in status_opcoes %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}
+  </select></div>
+</form>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Obra</th><th>Cliente</th><th>Status</th><th>Início</th><th>Previsão</th><th class="text-end">Orçamento</th><th class="text-end">Recebido</th><th class="text-end">Gasto</th><th class="text-end">Saldo</th></tr></thead>
+    <tbody>
+    {% for o in obras %}
+      {% set t = totais.get(o.id, {'entrada': 0, 'saida': 0}) %}
+      <tr>
+        <td><a href="{{ url_for('main.obra_detalhe', id=o.id) }}">{{ o.nome }}</a><div class="small text-muted">{{ o.endereco }}</div></td>
+        <td>{{ o.cliente }}</td><td><span class="badge text-bg-light border">{{ o.status }}</span></td>
+        <td>{{ o.data_inicio|data }}</td><td>{{ o.previsao_termino|data }}</td>
+        <td class="text-end">{{ o.orcamento|moeda }}</td>
+        <td class="text-end text-success">{{ t.entrada|moeda }}</td>
+        <td class="text-end text-danger">{{ t.saida|moeda }}</td>
+        <td class="text-end fw-semibold">{{ (t.entrada - t.saida)|moeda }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="text-center text-muted py-4">Nenhuma obra cadastrada.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

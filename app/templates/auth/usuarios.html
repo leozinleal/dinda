@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block content %}
+<div class="titulo-pagina"><h1>Usuários do sistema</h1></div>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card"><div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th></th></tr></thead>
+        <tbody>
+        {% for u in usuarios %}
+        <tr>
+          <td>{{ u.nome }}</td><td>{{ u.email }}</td>
+          <td>{{ 'Administrador' if u.is_admin else 'Usuário' }}</td>
+          <td>{% if u.ativo %}<span class="badge text-bg-success">Ativo</span>{% else %}<span class="badge text-bg-secondary">Inativo</span>{% endif %}</td>
+          <td class="text-end">
+            {% if u.id != current_user.id %}
+            <form method="post" class="d-inline">{{ csrf() }}
+              <input type="hidden" name="acao" value="alternar"><input type="hidden" name="id" value="{{ u.id }}">
+              <button class="btn btn-sm btn-outline-secondary">{{ 'Desativar' if u.ativo else 'Reativar' }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-body">
+      <h2 class="h6">Novo usuário</h2>
+      <form method="post">
+        {{ csrf() }}<input type="hidden" name="acao" value="criar">
+        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" name="nome" required></div>
+        <div class="mb-2"><label class="form-label">E-mail</label><input type="email" class="form-control" name="email" required></div>
+        <div class="mb-2"><label class="form-label">Senha inicial</label><input type="password" class="form-control" name="senha" minlength="6" required></div>
+        <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="is_admin" id="adm" value="1">
+          <label class="form-check-label" for="adm">Administrador (pode criar usuários)</label></div>
+        <button class="btn btn-primary">Criar usuário</button>
+      </form>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

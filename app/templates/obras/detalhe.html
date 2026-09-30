@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import valor_tipo, anexo_link, botao_excluir %}
+{% block content %}
+{% set aqui = url_for('main.obra_detalhe', id=obra.id) %}
+<div class="titulo-pagina">
+  <div>
+    <h1>{{ obra.nome }}</h1>
+    <div class="text-muted">{{ obra.cliente }}{% if obra.endereco %} · {{ obra.endereco }}{% endif %} ·
+      <span class="badge text-bg-light border">{{ obra.status }}</span></div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap no-print">
+    <a class="btn btn-success" href="{{ url_for('main.lancamento_form', tipo='entrada', obra=obra.id, voltar=aqui) }}"><i class="bi bi-plus-circle"></i> Entrada</a>
+    <a class="btn btn-danger" href="{{ url_for('main.lancamento_form', tipo='saida', obra=obra.id, voltar=aqui) }}"><i class="bi bi-dash-circle"></i> Saída</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('cad.nota_form', obra=obra.id, voltar=aqui) }}"><i class="bi bi-receipt"></i> Nota</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('cad.contrato_form', obra=obra.id, voltar=aqui) }}"><i class="bi bi-file-earmark-text"></i> Contrato</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('cad.pagamento_form', obra=obra.id, voltar=aqui) }}"><i class="bi bi-wallet2"></i> Pagamento</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.obra_form', id=obra.id) }}"><i class="bi bi-pencil"></i> Editar</a>
+    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i></button>
+    {{ botao_excluir(url_for('main.obra_excluir', id=obra.id), 'Excluir esta obra?') }}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Orçamento</div><div class="valor">{{ obra.orcamento|moeda }}</div>
+    <div class="small text-muted">{{ obra.data_inicio|data }}{% if obra.previsao_termino %} → {{ obra.previsao_termino|data }}{% endif %}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Recebido</div><div class="valor text-success">{{ entradas|moeda }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Gasto</div><div class="valor text-danger">{{ saidas|moeda }}</div>
+    {% if obra.orcamento %}{% set pct = saidas / obra.orcamento * 100 %}
+    <div class="progress mt-2"><div class="progress-bar {{ 'bg-danger' if pct > 100 else ('bg-warning' if pct > 85 else '') }}" style="width: {{ [pct, 100]|min }}%"></div></div>
+    <div class="small text-muted">{{ '%.0f'|format(pct) }}% do orçamento · restam {{ (obra.orcamento - saidas)|moeda }}</div>{% endif %}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Saldo da obra</div><div class="valor {{ 'text-success' if entradas >= saidas else 'text-danger' }}">{{ (entradas - saidas)|moeda }}</div></div></div></div>
+</div>
+
+{% if obra.observacoes %}<div class="alert alert-light border">{{ obra.observacoes }}</div>{% endif %}
+
+<ul class="nav nav-tabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-lanc">Entradas e saídas ({{ lancamentos|length }})</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-cat">Gastos por categoria</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-notas">Notas fiscais ({{ notas|length }})</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-contr">Contratos ({{ contratos|length }})</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-func">Equipe ({{ funcionarios|length }})</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pag">Pagamentos ({{ pagamentos|length }})</button></li>
+</ul>
+<div class="tab-content card border-top-0 rounded-top-0"><div class="card-body p-0 table-responsive">
+  <div class="tab-pane fade show active" id="t-lanc">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Forma</th><th class="text-end">Valor</th><th></th></tr></thead>
+      <tbody>
+      {% for l in lancamentos %}
+        <tr><td>{{ l.data|data }}</td><td>{{ l.descricao }} {{ anexo_link(l) }}{% if l.origem != 'Manual' %}<div class="small text-muted">{{ l.origem }}</div>{% endif %}</td>
+          <td>{{ l.categoria }}</td><td>{{ l.forma_pagamento }}</td><td class="text-end">{{ valor_tipo(l) }}</td>
+          <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.lancamento_form', id=l.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a></td></tr>
+      {% else %}<tr><td colspan="6" class="text-center text-muted py-3">Nenhum lançamento.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tab-pane fade p-3" id="t-cat">
+    {% for cat, v in por_categoria %}
+      <div class="d-flex justify-content-between"><span>{{ cat }}</span><strong>{{ v|moeda }}</strong></div>
+      <div class="progress mb-2"><div class="progress-bar bg-danger" style="width: {{ (v / saidas * 100) if saidas else 0 }}%"></div></div>
+    {% else %}<p class="text-muted mb-0">Nenhum gasto registrado.</p>{% endfor %}
+  </div>
+  <div class="tab-pane fade" id="t-notas">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Emissão</th><th>Nº</th><th>Tipo</th><th>Fornecedor / Cliente</th><th class="text-end">Valor</th><th></th></tr></thead>
+      <tbody>
+      {% for n in notas %}
+        <tr><td>{{ n.data_emissao|data }}</td><td>{{ n.numero }} {{ anexo_link(n) }}</td><td>{{ 'Recebida (compra)' if n.tipo == 'entrada' else 'Emitida (venda)' }}</td>
+          <td>{{ n.parceiro }}</td><td class="text-end">{{ n.valor|moeda }}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('cad.nota_form', id=n.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a></td></tr>
+      {% else %}<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma nota.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tab-pane fade" id="t-contr">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Contrato</th><th>Tipo</th><th>Parte</th><th>Vigência</th><th>Status</th><th class="text-end">Valor</th><th></th></tr></thead>
+      <tbody>
+      {% for c in contratos %}
+        <tr><td>{{ c.titulo }} {{ anexo_link(c) }}</td><td>{{ c.tipo }}</td><td>{{ c.parte }}</td><td>{{ c.data_inicio|data }} – {{ c.data_fim|data }}</td>
+          <td>{{ c.status }}</td><td class="text-end">{{ c.valor|moeda }}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('cad.contrato_form', id=c.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a></td></tr>
+      {% else %}<tr><td colspan="7" class="text-center text-muted py-3">Nenhum contrato.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tab-pane fade" id="t-func">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Nome</th><th>Cargo</th><th>Contratação</th><th>Telefone</th><th class="text-end">Salário</th></tr></thead>
+      <tbody>
+      {% for f in funcionarios %}
+        <tr><td><a href="{{ url_for('cad.funcionario_detalhe', id=f.id) }}">{{ f.nome }}</a></td><td>{{ f.cargo }}</td><td>{{ f.tipo_contratacao }}</td><td>{{ f.telefone }}</td><td class="text-end">{{ f.salario|moeda }}</td></tr>
+      {% else %}<tr><td colspan="5" class="text-center text-muted py-3">Nenhum funcionário alocado nesta obra.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tab-pane fade" id="t-pag">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Data</th><th>Funcionário</th><th>Tipo</th><th>Competência</th><th class="text-end">Valor</th><th></th></tr></thead>
+      <tbody>
+      {% for p in pagamentos %}
+        <tr><td>{{ p.data_pagamento|data }}</td><td>{{ p.funcionario.nome }} {{ anexo_link(p) }}</td><td>{{ p.tipo }}</td><td>{{ p.competencia }}</td><td class="text-end">{{ p.valor|moeda }}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('cad.pagamento_form', id=p.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a></td></tr>
+      {% else %}<tr><td colspan="6" class="text-center text-muted py-3">Nenhum pagamento.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, obra_select, anexo_input, valor_input %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar pagamento' if p.id else 'Registrar pagamento de funcionário' }}</h1></div>
+{% if not funcionarios %}
+<div class="alert alert-warning">Cadastre um funcionário antes. <a href="{{ url_for('cad.funcionario_form') }}">Novo funcionário</a></div>
+{% endif %}
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    {{ csrf() }}
+    <div class="col-md-6"><label class="form-label">Funcionário *</label><select class="form-select" name="funcionario_id" required>
+      <option value="">— escolha —</option>
+      {% for f in funcionarios %}<option value="{{ f.id }}" {{ 'selected' if p.funcionario_id == f.id }}>{{ f.nome }}{% if f.cargo %} – {{ f.cargo }}{% endif %}</option>{% endfor %}
+    </select></div>
+    <div class="col-md-6"><label class="form-label">Tipo de pagamento</label><select class="form-select" name="tipo">
+      {% for t in tipos %}<option {{ 'selected' if p.tipo == t }}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="form-label">Valor pago *</label>{{ valor_input(p.valor) }}</div>
+    <div class="col-md-4"><label class="form-label">Data do pagamento *</label><input type="date" class="form-control" name="data_pagamento" value="{{ p.data_pagamento or '' }}" required></div>
+    <div class="col-md-4"><label class="form-label">Competência (mês de referência)</label><input type="month" class="form-control" name="competencia" value="{{ p.competencia or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Forma de pagamento</label><select class="form-select" name="forma_pagamento">
+      {% for f in formas %}<option {{ 'selected' if p.forma_pagamento == f }}>{{ f }}</option>{% endfor %}</select></div>
+    <div class="col-md-8"><label class="form-label">Obra (para somar no custo da obra)</label>{{ obra_select(obras, p.obra_id) }}</div>
+    <div class="col-md-6">{{ anexo_input(p, 'Comprovante / recibo assinado (opcional)') }}</div>
+    <div class="col-md-6"><label class="form-label">Observação</label><input class="form-control" name="observacao" value="{{ p.observacao or '' }}"></div>
+    <div class="col-12"><div class="form-text"><i class="bi bi-info-circle"></i> O pagamento entra automaticamente como <strong>saída</strong> em “Entradas e Saídas”, na categoria “Mão de obra / Folha de pagamento”.</div></div>
+    <div class="col-12 d-flex gap-2 flex-wrap">
+      <button class="btn btn-primary">Salvar</button>
+      {% if not p.id %}<button class="btn btn-outline-primary" name="continuar" value="1">Salvar e registrar outro</button>{% endif %}
+      <a class="btn btn-outline-secondary" href="{{ url_segura(request.args.get('voltar')) or url_for('cad.pagamentos') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

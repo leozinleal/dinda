@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, obra_select, anexo_input, valor_input %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar contrato' if c.id else 'Novo contrato' }}</h1></div>
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    {{ csrf() }}
+    <div class="col-md-8"><label class="form-label">Título *</label><input class="form-control" name="titulo" value="{{ c.titulo or '' }}" required placeholder="Ex.: Contrato de empreitada – Casa Rua das Palmeiras"></div>
+    <div class="col-md-4"><label class="form-label">Tipo</label><select class="form-select" name="tipo">
+      {% for t in tipos %}<option {{ 'selected' if c.tipo == t }}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="col-md-8"><label class="form-label">Outra parte (cliente, fornecedor...)</label><input class="form-control" name="parte" value="{{ c.parte or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">CPF / CNPJ</label><input class="form-control" name="cpf_cnpj" value="{{ c.cpf_cnpj or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Valor do contrato</label>{{ valor_input(c.valor, required=False) }}</div>
+    <div class="col-md-4"><label class="form-label">Início</label><input type="date" class="form-control" name="data_inicio" value="{{ c.data_inicio or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Término / vencimento</label><input type="date" class="form-control" name="data_fim" value="{{ c.data_fim or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Obra</label>{{ obra_select(obras, c.obra_id) }}</div>
+    <div class="col-md-6"><label class="form-label">Status</label><select class="form-select" name="status">
+      {% for s in status_opcoes %}<option {{ 'selected' if c.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="col-12">{{ anexo_input(c, 'Contrato assinado (PDF ou foto)') }}</div>
+    <div class="col-12"><label class="form-label">Observações / cláusulas importantes</label><textarea class="form-control" name="descricao" rows="3">{{ c.descricao or '' }}</textarea></div>
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_segura(request.args.get('voltar')) or url_for('cad.contratos') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

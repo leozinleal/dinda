@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import anexo_link, botao_excluir, filtro_obra %}
+{% block content %}
+{% set aqui = request.full_path %}
+<div class="titulo-pagina">
+  <h1>Notas Fiscais</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="{{ url_for('cad.nota_form', tipo='entrada') }}"><i class="bi bi-plus"></i> Nota recebida (compra)</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('cad.nota_form', tipo='saida') }}"><i class="bi bi-plus"></i> Nota emitida (venda/serviço)</a>
+  </div>
+</div>
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-3"><select class="form-select" name="tipo"><option value="">Todas</option>
+    <option value="entrada" {{ 'selected' if filtros.tipo == 'entrada' }}>Recebidas (compras)</option>
+    <option value="saida" {{ 'selected' if filtros.tipo == 'saida' }}>Emitidas (vendas)</option></select></div>
+  <div class="col-md-3">{{ filtro_obra(obras, filtros.obra) }}</div>
+  <div class="col-md-4"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Número, fornecedor, CNPJ..."></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button></div>
+</div></form>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Emissão</th><th>Número</th><th>Tipo</th><th>Fornecedor / Cliente</th><th>Obra</th><th>Arquivo</th><th>Financeiro</th><th class="text-end">Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for n in notas %}
+      <tr>
+        <td>{{ n.data_emissao|data }}</td>
+        <td>{{ n.numero }}{% if n.serie %}<span class="text-muted">/{{ n.serie }}</span>{% endif %}</td>
+        <td>{% if n.tipo == 'entrada' %}<span class="badge text-bg-warning">Recebida</span>{% else %}<span class="badge text-bg-info">Emitida</span>{% endif %}</td>
+        <td>{{ n.parceiro }}<div class="small text-muted">{{ n.cpf_cnpj }}</div></td>
+        <td>{{ n.obra.nome if n.obra else 'Empresa' }}</td>
+        <td>{% if n.arquivo %}{{ anexo_link(n) }}{% else %}<span class="text-danger small" title="Sem arquivo anexado"><i class="bi bi-exclamation-triangle"></i></span>{% endif %}</td>
+        <td>{% if n.lancamento %}<i class="bi bi-check-circle text-success" title="Lançada no financeiro"></i>{% else %}<span class="text-muted small">—</span>{% endif %}</td>
+        <td class="text-end">{{ n.valor|moeda }}</td>
+        <td class="text-end text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('cad.nota_form', id=n.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a>
+          {{ botao_excluir(url_for('cad.nota_excluir', id=n.id), 'Excluir esta nota (e o lançamento no financeiro)?', aqui) }}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="text-center text-muted py-4">Nenhuma nota fiscal.</td></tr>
+    {% endfor %}
+    </tbody>
+    {% if notas %}<tfoot><tr><th colspan="7" class="text-end">Total</th><th class="text-end">{{ total|moeda }}</th><th></th></tr></tfoot>{% endif %}
+  </table>
+</div></div>
+{% endblock %}

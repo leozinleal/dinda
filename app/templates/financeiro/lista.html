@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import valor_tipo, anexo_link, botao_excluir, filtro_obra %}
+{% block content %}
+{% set aqui = request.full_path %}
+<div class="titulo-pagina">
+  <h1>Entradas e Saídas</h1>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-success" href="{{ url_for('main.lancamento_form', tipo='entrada') }}"><i class="bi bi-plus-circle"></i> Nova entrada</a>
+    <a class="btn btn-danger" href="{{ url_for('main.lancamento_form', tipo='saida') }}"><i class="bi bi-dash-circle"></i> Nova saída</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.financeiro_csv', **filtros) }}"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar (Excel/CSV)</a>
+  </div>
+</div>
+
+<form class="filtros card card-body mb-3">
+  <div class="row g-2">
+    <div class="col-md-3">{{ filtro_obra(obras, filtros.obra) }}</div>
+    <div class="col-md-2"><select class="form-select" name="tipo">
+      <option value="">Entradas e saídas</option>
+      <option value="entrada" {{ 'selected' if filtros.tipo == 'entrada' }}>Só entradas</option>
+      <option value="saida" {{ 'selected' if filtros.tipo == 'saida' }}>Só saídas</option></select></div>
+    <div class="col-md-3"><select class="form-select" name="categoria"><option value="">Todas as categorias</option>
+      {% for c in categorias %}<option {{ 'selected' if filtros.categoria == c }}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-2"><input type="date" class="form-control" name="de" value="{{ filtros.de }}" title="De"></div>
+    <div class="col-6 col-md-2"><input type="date" class="form-control" name="ate" value="{{ filtros.ate }}" title="Até"></div>
+    <div class="col-md-6"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Buscar na descrição..."></div>
+    <div class="col-md-6 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-funnel"></i> Filtrar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('main.financeiro') }}">Limpar</a></div>
+  </div>
+</form>
+
+<div class="row g-3 mb-3">
+  <div class="col-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Entradas</div><div class="valor text-success">{{ entradas|moeda }}</div></div></div></div>
+  <div class="col-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Saídas</div><div class="valor text-danger">{{ saidas|moeda }}</div></div></div></div>
+  <div class="col-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Saldo</div><div class="valor {{ 'text-success' if entradas >= saidas else 'text-danger' }}">{{ (entradas - saidas)|moeda }}</div></div></div></div>
+</div>
+
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Obra</th><th>Forma</th><th class="text-end">Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for l in lancamentos %}
+      <tr>
+        <td class="text-nowrap">{{ l.data|data }}</td>
+        <td>{{ l.descricao }} {{ anexo_link(l) }}{% if l.origem != 'Manual' %}<div class="small text-muted"><i class="bi bi-link-45deg"></i> {{ l.origem }}</div>{% endif %}</td>
+        <td>{{ l.categoria }}</td>
+        <td>{% if l.obra %}<a href="{{ url_for('main.obra_detalhe', id=l.obra.id) }}">{{ l.obra.nome }}</a>{% else %}<span class="text-muted">Empresa</span>{% endif %}</td>
+        <td>{{ l.forma_pagamento }}</td>
+        <td class="text-end">{{ valor_tipo(l) }}</td>
+        <td class="text-end text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.lancamento_form', id=l.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a>
+          {% if l.origem == 'Manual' %}{{ botao_excluir(url_for('main.lancamento_excluir', id=l.id), 'Excluir este lançamento?', aqui) }}{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="text-center text-muted py-4">Nenhum lançamento encontrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}
