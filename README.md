@@ -20,10 +20,14 @@ Pré-requisito: [Python 3.10 ou mais novo](https://www.python.org/downloads/). N
 "Add Python to PATH" durante a instalação.
 
 - **Windows**: dê dois cliques em `iniciar.bat`.
-- **Linux/macOS**: execute `./iniciar.sh`.
+- **Mac**: clique com o botão direito em `iniciar.command` e escolha **Abrir**. Na primeira vez, o Mac
+  pergunta se quer mesmo abrir; confirme. Nas próximas vezes, basta dar dois cliques.
+- **Linux**: execute `./iniciar.sh`.
 
-Na primeira vez, o script instala o que for preciso. Depois, abra **http://localhost:5000** no navegador.
+Na primeira vez, o script instala o que for preciso (demora 1 ou 2 minutos). Depois, abra **http://localhost:8000** no navegador.
 No primeiro acesso, o sistema pede para criar o usuário administrador.
+
+Para desligar o sistema, feche a janela do Terminal (ou do Prompt de Comando).
 
 ### Manualmente
 
@@ -47,7 +51,7 @@ Tudo fica na pasta `instance/`:
 ## Acessar de outros computadores ou do celular
 
 - **Na mesma rede (escritório)**: inicie com `HOST=0.0.0.0` (Windows: `set HOST=0.0.0.0` antes de rodar) e
-  acesse `http://IP-DO-COMPUTADOR:5000` pelos outros aparelhos.
+  acesse `http://IP-DO-COMPUTADOR:8000` pelos outros aparelhos.
 - **Pela internet**: publique em um servidor (VPS, Render, Railway, PythonAnywhere etc.) atrás de HTTPS.
   Variáveis de ambiente aceitas:
   - `SECRET_KEY`: chave secreta das sessões.
