@@ -70,3 +70,65 @@
   </optgroup>
 </select>
 {% endmacro %}
+
+{% macro validade_badge(d, hoje) %}
+{% if d.validade %}
+  {% if d.validade < hoje %}<span class="badge text-bg-danger">vencido {{ d.validade|data }}</span>
+  {% elif (d.validade - hoje).days <= 30 %}<span class="badge text-bg-warning">vence {{ d.validade|data }}</span>
+  {% else %}<span class="small text-muted">válido até {{ d.validade|data }}</span>{% endif %}
+{% endif %}
+{% endmacro %}
+
+{#- Painel de documentos reutilizado em Empresa, Obra, Cliente, Venda, Fornecedor e Jurídico -#}
+{% macro documentos_painel(docs, entidade, entidade_id, categorias, voltar, hoje, titulo='Documentos') %}
+<div class="card mb-3">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <strong><i class="bi bi-folder2-open"></i> {{ titulo }} ({{ docs|length }})</strong>
+    <button class="btn btn-sm btn-primary text-nowrap" type="button" data-bs-toggle="collapse" data-bs-target="#novo-doc-{{ entidade }}">
+      <i class="bi bi-upload"></i> Anexar documentos</button>
+  </div>
+  <div class="collapse {{ 'show' if not docs }}" id="novo-doc-{{ entidade }}">
+    <form method="post" action="{{ url_for('com.documento_novo') }}" enctype="multipart/form-data" class="card-body border-bottom bg-light row g-2">
+      {{ csrf() }}
+      <input type="hidden" name="entidade" value="{{ entidade }}">
+      <input type="hidden" name="entidade_id" value="{{ entidade_id or '' }}">
+      <input type="hidden" name="voltar" value="{{ voltar }}">
+      <div class="col-md-6"><label class="form-label small">Arquivos * <span class="text-muted">(pode escolher vários de uma vez)</span></label>
+        <input type="file" class="form-control" name="arquivos" multiple required></div>
+      <div class="col-md-6"><label class="form-label small">Categoria</label>
+        <select class="form-select" name="categoria"><option value="">—</option>
+          {% for c in categorias %}<option>{{ c }}</option>{% endfor %}</select></div>
+      <div class="col-md-6"><label class="form-label small">Título <span class="text-muted">(se vazio, usa o nome do arquivo)</span></label>
+        <input class="form-control" name="titulo"></div>
+      <div class="col-6 col-md-3"><label class="form-label small">Data do documento</label><input type="date" class="form-control" name="data_documento"></div>
+      <div class="col-6 col-md-3"><label class="form-label small">Validade / vencimento</label><input type="date" class="form-control" name="validade"></div>
+      {{ caller() if caller }}
+      <div class="col-12"><label class="form-label small">Observações</label><input class="form-control" name="descricao"></div>
+      <div class="col-12"><button class="btn btn-primary btn-sm"><i class="bi bi-upload"></i> Enviar</button></div>
+    </form>
+  </div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-hover mb-0">
+      {% if docs %}<thead><tr><th>Documento</th><th>Categoria</th><th>Data</th><th>Validade</th><th></th></tr></thead>{% endif %}
+      <tbody>
+      {% for d in docs %}
+        <tr>
+          <td><a href="{{ url_for('main.arquivo', nome=d.arquivo) }}" target="_blank"><i class="bi bi-file-earmark"></i> {{ d.titulo }}</a>
+            {% if d.descricao %}<div class="small text-muted">{{ d.descricao }}</div>{% endif %}</td>
+          <td class="small">{{ d.categoria }}</td>
+          <td class="small text-nowrap">{{ d.data_documento|data }}</td>
+          <td class="small">{{ validade_badge(d, hoje) }}</td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.arquivo', nome=d.arquivo, baixar=1) }}" title="Baixar"><i class="bi bi-download"></i></a>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('com.documento_form', id=d.id, voltar=voltar) }}" title="Editar"><i class="bi bi-pencil"></i></a>
+            {{ botao_excluir(url_for('com.documento_excluir', id=d.id), 'Excluir este documento?', voltar) }}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td class="text-center text-muted py-3">Nenhum documento anexado ainda.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endmacro %}

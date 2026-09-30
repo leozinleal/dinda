@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, obra_select, valor_input %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar venda' if v.id else 'Nova venda' }}</h1></div>
+{% if not clientes %}<div class="alert alert-warning">Cadastre o cliente antes. <a href="{{ url_for('com.cliente_form') }}">Novo cliente</a></div>{% endif %}
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" class="row g-3">
+    {{ csrf() }}
+    <div class="col-md-8"><label class="form-label">Cliente *</label><select class="form-select" name="cliente_id" required><option value="">— escolha —</option>
+      {% for c in clientes %}<option value="{{ c.id }}" {{ 'selected' if v.cliente_id == c.id }}>{{ c.nome }}{% if c.cpf_cnpj %} – {{ c.cpf_cnpj }}{% endif %}</option>{% endfor %}</select>
+      <div class="form-text"><a href="{{ url_for('com.cliente_form') }}" target="_blank">+ cadastrar novo cliente</a> (depois recarregue a página)</div></div>
+    <div class="col-md-4"><label class="form-label">Status</label><select class="form-select" name="status">
+      {% for s in status_opcoes %}<option {{ 'selected' if v.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="col-md-6"><label class="form-label">Obra / empreendimento</label>{{ obra_select(obras, v.obra_id, rotulo_vazio='— nenhuma —') }}</div>
+    <div class="col-md-6"><label class="form-label">Unidade</label><input class="form-control" name="unidade" value="{{ v.unidade or '' }}" placeholder="Ex.: Apto 302 – Bloco B, Casa 5, Lote 12"></div>
+    <div class="col-md-4"><label class="form-label">Valor total da venda *</label>{{ valor_input(v.valor) }}</div>
+    <div class="col-md-4"><label class="form-label">Data da venda</label><input type="date" class="form-control" name="data_venda" value="{{ v.data_venda or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Corretor / imobiliária</label><input class="form-control" name="corretor" value="{{ v.corretor or '' }}"></div>
+    <div class="col-12"><label class="form-label">Condições de pagamento</label><textarea class="form-control" name="condicoes" rows="3" placeholder="Ex.: entrada de R$ 50.000 + 24 parcelas de R$ 5.000 + financiamento Caixa">{{ v.condicoes or '' }}</textarea></div>
+    <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="2">{{ v.observacoes or '' }}</textarea></div>
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('com.venda_detalhe', id=v.id) if v.id else url_for('com.vendas') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

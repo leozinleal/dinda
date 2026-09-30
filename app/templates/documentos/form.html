@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, obra_select, anexo_input %}
+{% block content %}
+<div class="titulo-pagina"><div><h1>Editar documento</h1>
+  <div class="text-muted">{% if dono[1] %}<a href="{{ dono[1] }}">{{ dono[0] }}</a>{% else %}{{ dono[0] }}{% endif %}</div></div></div>
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    {{ csrf() }}
+    <div class="col-md-8"><label class="form-label">Título *</label><input class="form-control" name="titulo" value="{{ doc.titulo }}" required></div>
+    <div class="col-md-4"><label class="form-label">Categoria</label><select class="form-select" name="categoria"><option value="">—</option>
+      {% for c in categorias %}<option {{ 'selected' if doc.categoria == c }}>{{ c }}</option>{% endfor %}
+      {% if doc.categoria and doc.categoria not in categorias %}<option selected>{{ doc.categoria }}</option>{% endif %}</select></div>
+    <div class="col-md-4"><label class="form-label">Data do documento</label><input type="date" class="form-control" name="data_documento" value="{{ doc.data_documento or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Validade / vencimento</label><input type="date" class="form-control" name="validade" value="{{ doc.validade or '' }}"></div>
+    {% if doc.entidade == 'juridico' %}
+    <div class="col-md-4"><label class="form-label">Situação</label><select class="form-select" name="status">
+      {% for s in status_opcoes %}<option value="{{ s }}" {{ 'selected' if doc.status == s }}>{{ s or '—' }}</option>{% endfor %}</select></div>
+    <div class="col-md-6"><label class="form-label">Partes / nº do processo</label><input class="form-control" name="parte" value="{{ doc.parte or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Obra relacionada</label>{{ obra_select(obras, doc.obra_id, rotulo_vazio='— nenhuma —') }}</div>
+    {% endif %}
+    <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="descricao" rows="2">{{ doc.descricao or '' }}</textarea></div>
+    <div class="col-12"><label class="form-label">Arquivo atual</label>
+      <div><a href="{{ url_for('main.arquivo', nome=doc.arquivo) }}" target="_blank"><i class="bi bi-file-earmark"></i> {{ doc.arquivo_nome }}</a></div>
+      <label class="form-label mt-2 small">Substituir por outro arquivo (opcional)</label><input type="file" class="form-control" name="arquivo"></div>
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_segura(request.args.get('voltar')) or dono[1] or url_for('com.documentos') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

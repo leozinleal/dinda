@@ -20,6 +20,16 @@
     <div class="col-md-4"><label class="form-label">Forma de pagamento</label><select class="form-select" name="forma_pagamento"><option value="">—</option>
       {% for f in formas %}<option {{ 'selected' if l.forma_pagamento == f }}>{{ f }}</option>{% endfor %}</select></div>
     <div class="col-md-6"><label class="form-label">Obra</label>{{ obra_select(obras, l.obra_id) }}</div>
+    <div class="col-md-6"><label class="form-label">Fornecedor <span class="text-muted small">(para saídas)</span></label>
+      <select class="form-select" name="fornecedor_id"><option value="">—</option>
+        {% for f in fornecedores %}<option value="{{ f.id }}" {{ 'selected' if l.fornecedor_id == f.id }}>{{ f.nome_exibicao }}</option>{% endfor %}</select>
+      <div class="form-text"><a href="{{ url_for('com.fornecedor_form') }}" target="_blank">+ cadastrar fornecedor</a></div></div>
+    <div class="col-md-6"><label class="form-label">Cliente <span class="text-muted small">(para entradas)</span></label>
+      <select class="form-select" name="cliente_id"><option value="">—</option>
+        {% for c in clientes %}<option value="{{ c.id }}" {{ 'selected' if l.cliente_id == c.id }}>{{ c.nome }}</option>{% endfor %}</select></div>
+    <div class="col-md-6"><label class="form-label">Venda <span class="text-muted small">(se for parcela / pagamento de uma venda)</span></label>
+      <select class="form-select" name="venda_id"><option value="">—</option>
+        {% for v in vendas %}<option value="{{ v.id }}" {{ 'selected' if l.venda_id == v.id }}>{{ v.cliente.nome }} – {{ v.unidade or 'sem unidade' }}{% if v.obra %} ({{ v.obra.nome }}){% endif %}</option>{% endfor %}</select></div>
     <div class="col-md-6">{{ anexo_input(l, 'Comprovante / recibo (opcional)') }}</div>
     <div class="col-12 d-flex gap-2 flex-wrap">
       <button class="btn btn-primary">Salvar</button>

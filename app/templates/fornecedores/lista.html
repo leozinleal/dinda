@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="titulo-pagina">
+  <h1>Fornecedores</h1>
+  <a class="btn btn-primary" href="{{ url_for('com.fornecedor_form') }}"><i class="bi bi-plus"></i> Novo fornecedor</a>
+</div>
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-5"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Nome, CNPJ, contato..."></div>
+  <div class="col-md-3"><select class="form-select" name="categoria"><option value="">Todos os ramos</option>
+    {% for c in categorias %}<option {{ 'selected' if filtros.categoria == c }}>{{ c }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><select class="form-select" name="situacao">
+    <option value="">Só ativos</option><option value="todos" {{ 'selected' if filtros.situacao == 'todos' }}>Todos</option></select></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button></div>
+</div></form>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Fornecedor</th><th>CNPJ / CPF</th><th>Ramo</th><th>Contato</th><th>Telefone</th><th class="text-end">Total pago</th></tr></thead>
+    <tbody>
+    {% for f in fornecedores %}
+      <tr>
+        <td><a href="{{ url_for('com.fornecedor_detalhe', id=f.id) }}">{{ f.nome_exibicao }}</a>{% if not f.ativo %} <span class="badge text-bg-secondary">inativo</span>{% endif %}
+          {% if f.nome_fantasia %}<div class="small text-muted">{{ f.nome }}</div>{% endif %}</td>
+        <td>{{ f.cpf_cnpj }}</td><td>{{ f.categoria }}</td><td>{{ f.contato }}</td><td>{{ f.telefone }}</td>
+        <td class="text-end">{{ pago.get(f.id, 0)|moeda }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">Nenhum fornecedor cadastrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

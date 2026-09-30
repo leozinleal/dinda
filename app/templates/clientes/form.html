@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar cliente' if c.id else 'Novo cliente' }}</h1></div>
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" class="row g-3">
+    {{ csrf() }}
+    <div class="col-md-8"><label class="form-label">Nome completo / razão social *</label><input class="form-control" name="nome" value="{{ c.nome or '' }}" required></div>
+    <div class="col-md-4"><label class="form-label">Tipo</label><select class="form-select" name="tipo_pessoa">
+      <option value="PF" {{ 'selected' if c.tipo_pessoa != 'PJ' }}>Pessoa física</option>
+      <option value="PJ" {{ 'selected' if c.tipo_pessoa == 'PJ' }}>Pessoa jurídica</option></select></div>
+    <div class="col-md-4"><label class="form-label">CPF / CNPJ</label><input class="form-control" name="cpf_cnpj" value="{{ c.cpf_cnpj or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">RG</label><input class="form-control" name="rg" value="{{ c.rg or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Data de nascimento</label><input type="date" class="form-control" name="data_nascimento" value="{{ c.data_nascimento or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Estado civil</label><input class="form-control" name="estado_civil" value="{{ c.estado_civil or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Profissão</label><input class="form-control" name="profissao" value="{{ c.profissao or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Telefone / WhatsApp</label><input class="form-control" name="telefone" value="{{ c.telefone or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">E-mail</label><input type="email" class="form-control" name="email" value="{{ c.email or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Endereço</label><input class="form-control" name="endereco" value="{{ c.endereco or '' }}"></div>
+    <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="3">{{ c.observacoes or '' }}</textarea></div>
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('com.cliente_detalhe', id=c.id) if c.id else url_for('com.clientes') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

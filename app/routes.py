@@ -8,12 +8,12 @@ from flask import (
     request, send_from_directory, url_for,
 )
 from flask_login import current_user, login_required, login_user, logout_user
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from .models import (
     CATEGORIAS_ENTRADA, CATEGORIAS_SAIDA, FORMAS_PAGAMENTO, OBRA_STATUS,
-    Contrato, Empresa, Funcionario, Lancamento, NotaFiscal, Obra, PagamentoFuncionario,
-    Usuario, db,
+    CATEGORIAS_DOCUMENTO, Cliente, Contrato, Documento, Empresa, Fornecedor, Funcionario, Lancamento,
+    NotaFiscal, Obra, PagamentoFuncionario, Usuario, Venda, db,
 )
 from .utils import (
     cent, formata_data, parse_data, parse_int, parse_valor, remover_anexo, render_sem_salvar,
@@ -183,8 +183,15 @@ def dashboard():
         .scalar()
     )
 
+    docs_vencendo = (
+        Documento.query.filter(Documento.validade.isnot(None), Documento.validade <= hoje + timedelta(days=30))
+        .order_by(Documento.validade).limit(15).all()
+    )
+    vendas_ativas = Venda.query.filter(Venda.status != "Distratada").all()
+    a_receber = sum((v.a_receber for v in vendas_ativas), cent(0))
+
     return render_template(
-        "dashboard.html",
+        "dashboard.html", docs_vencendo=docs_vencendo, a_receber=a_receber,
         resumo=resumo, obras=obras, totais=totais, geral=geral,
         contratos_vencendo=contratos_vencendo, ultimos=ultimos, hoje=hoje,
         folha_mes=folha_mes, funcionarios_ativos=Funcionario.query.filter_by(ativo=True).count(),
@@ -198,7 +205,7 @@ def dashboard():
 def arquivo(nome):
     nome = os.path.basename(nome)
     original = None
-    for modelo in (Lancamento, NotaFiscal, Contrato, PagamentoFuncionario):
+    for modelo in (Lancamento, NotaFiscal, Contrato, PagamentoFuncionario, Documento):
         obj = modelo.query.filter_by(arquivo=nome).first()
         if obj:
             original = obj.arquivo_nome
@@ -224,7 +231,11 @@ def empresa():
         db.session.commit()
         flash("Dados da empresa salvos.", "success")
         return redirect(url_for("main.empresa"))
-    return render_template("empresa/form.html", emp=emp)
+    return render_template(
+        "empresa/form.html", emp=emp, docs=Documento.query.filter_by(entidade="empresa")
+        .order_by(Documento.categoria, Documento.titulo).all(),
+        categorias_doc=CATEGORIAS_DOCUMENTO["empresa"], hoje=date.today(),
+    )
 
 
 # ---------------------------------------------------------------- Obras
@@ -292,6 +303,10 @@ def obra_detalhe(id):
         funcionarios=Funcionario.query.filter_by(obra_id=id, ativo=True).order_by(Funcionario.nome).all(),
         pagamentos=PagamentoFuncionario.query.filter_by(obra_id=id)
         .order_by(PagamentoFuncionario.data_pagamento.desc()).all(),
+        vendas=Venda.query.filter_by(obra_id=id).order_by(Venda.unidade).all(),
+        docs=Documento.query.filter_by(entidade="obra", entidade_id=id)
+        .order_by(Documento.categoria, Documento.titulo).all(),
+        categorias_doc=CATEGORIAS_DOCUMENTO["obra"], hoje=date.today(),
     )
 
 
@@ -301,10 +316,10 @@ def obra_excluir(id):
     obra = db.get_or_404(Obra, id)
     vinculos = sum(
         m.query.filter_by(obra_id=id).count()
-        for m in (Lancamento, NotaFiscal, Contrato, PagamentoFuncionario, Funcionario)
-    )
+        for m in (Lancamento, NotaFiscal, Contrato, PagamentoFuncionario, Funcionario, Venda)
+    ) + Documento.query.filter_by(entidade="obra", entidade_id=id).count()
     if vinculos:
-        flash("Essa obra possui lançamentos, documentos ou funcionários vinculados. "
+        flash("Essa obra possui lançamentos, documentos, vendas ou funcionários vinculados. "
               "Para mantê-la no histórico, altere o status para 'Concluída' ou 'Cancelada'.", "warning")
         return redirect(url_for("main.obra_detalhe", id=id))
     db.session.delete(obra)
@@ -316,12 +331,16 @@ def obra_excluir(id):
 # ---------------------------------------------------------------- Financeiro
 
 def _filtrar_lancamentos():
-    f = {k: request.args.get(k, "") for k in ("obra", "tipo", "categoria", "de", "ate", "busca")}
+    f = {k: request.args.get(k, "") for k in ("obra", "tipo", "categoria", "de", "ate", "busca", "fornecedor", "cliente")}
     q = Lancamento.query
     if f["obra"] == "geral":
         q = q.filter(Lancamento.obra_id.is_(None))
     elif f["obra"]:
         q = q.filter(Lancamento.obra_id == parse_int(f["obra"]))
+    if f["fornecedor"]:
+        q = q.filter(Lancamento.fornecedor_id == parse_int(f["fornecedor"]))
+    if f["cliente"]:
+        q = q.filter(Lancamento.cliente_id == parse_int(f["cliente"]))
     if f["tipo"] in ("entrada", "saida"):
         q = q.filter(Lancamento.tipo == f["tipo"])
     if f["categoria"]:
@@ -347,6 +366,8 @@ def financeiro():
     return render_template(
         "financeiro/lista.html", lancamentos=lancamentos, filtros=filtros,
         entradas=entradas, saidas=saidas, obras=obras_opcoes(),
+        fornecedores=Fornecedor.query.order_by(Fornecedor.nome).all(),
+        clientes=Cliente.query.order_by(Cliente.nome).all(),
         categorias=CATEGORIAS_ENTRADA + CATEGORIAS_SAIDA,
     )
 
@@ -357,12 +378,15 @@ def financeiro_csv():
     q, _ = _filtrar_lancamentos()
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=";")
-    w.writerow(["Data", "Tipo", "Descrição", "Categoria", "Obra", "Forma de pagamento", "Valor", "Origem"])
+    w.writerow(["Data", "Tipo", "Descrição", "Categoria", "Obra", "Fornecedor", "Cliente",
+                "Forma de pagamento", "Valor", "Origem"])
     for l in q.order_by(Lancamento.data, Lancamento.id).all():
         valor = f"{l.valor:.2f}".replace(".", ",")
         w.writerow([
             formata_data(l.data), "Entrada" if l.tipo == "entrada" else "Saída", l.descricao,
-            l.categoria, l.obra.nome if l.obra else "Empresa (geral)", l.forma_pagamento,
+            l.categoria, l.obra.nome if l.obra else "Empresa (geral)",
+            l.fornecedor.nome_exibicao if l.fornecedor else "", l.cliente.nome if l.cliente else "",
+            l.forma_pagamento,
             valor if l.tipo == "entrada" else "-" + valor, l.origem,
         ])
     # BOM para o Excel reconhecer acentos
@@ -388,7 +412,14 @@ def lancamento_form(id=None):
         l = Lancamento(
             tipo=request.args.get("tipo", "saida"), data=date.today(),
             obra_id=parse_int(request.args.get("obra")),
+            fornecedor_id=parse_int(request.args.get("fornecedor")),
+            cliente_id=parse_int(request.args.get("cliente")),
         )
+        venda = db.session.get(Venda, parse_int(request.args.get("venda")) or 0)
+        if venda:
+            l.tipo, l.venda_id, l.cliente_id, l.obra_id = "entrada", venda.id, venda.cliente_id, venda.obra_id
+            l.categoria = "Venda de unidade / Parcela de cliente"
+            l.descricao = f"Recebimento {venda.unidade} – {venda.cliente.nome}".strip()
     if request.method == "POST":
         try:
             l.tipo = request.form.get("tipo")
@@ -404,6 +435,13 @@ def lancamento_form(id=None):
             l.categoria = request.form.get("categoria", "")
             l.forma_pagamento = request.form.get("forma_pagamento", "")
             l.obra_id = parse_int(request.form.get("obra_id"))
+            l.fornecedor_id = parse_int(request.form.get("fornecedor_id"))
+            l.cliente_id = parse_int(request.form.get("cliente_id"))
+            l.venda_id = parse_int(request.form.get("venda_id"))
+            venda = db.session.get(Venda, l.venda_id) if l.venda_id else None
+            if venda:
+                l.cliente_id = venda.cliente_id
+                l.obra_id = l.obra_id or venda.obra_id
             salvar_anexo(l)
         except ValueError as e:
             flash(str(e), "danger")
@@ -420,6 +458,10 @@ def lancamento_form(id=None):
 def _render_lancamento(l):
     return render_template(
         "financeiro/form.html", l=l, obras=obras_opcoes(),
+        fornecedores=Fornecedor.query.filter(
+            or_(Fornecedor.ativo.is_(True), Fornecedor.id == l.fornecedor_id)).order_by(Fornecedor.nome).all(),
+        clientes=Cliente.query.order_by(Cliente.nome).all(),
+        vendas=Venda.query.join(Cliente).order_by(Cliente.nome, Venda.unidade).all(),
         categorias_entrada=CATEGORIAS_ENTRADA, categorias_saida=CATEGORIAS_SAIDA,
         formas=FORMAS_PAGAMENTO,
     )

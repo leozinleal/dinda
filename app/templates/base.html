@@ -24,19 +24,48 @@
       {% set ep = request.endpoint or '' %}
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link {{ 'active' if ep == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2"></i> Painel</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {{ 'active' if ep in ('main.empresa',) or ep.startswith('cad.funcionario') }}" href="#" data-bs-toggle="dropdown"><i class="bi bi-building"></i> Empresa</a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('main.empresa') }}"><i class="bi bi-building-gear"></i> Dados e documentos da empresa</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('cad.funcionarios') }}"><i class="bi bi-people"></i> Funcionários</a></li>
+          </ul>
+        </li>
         <li class="nav-item"><a class="nav-link {{ 'active' if ep.startswith('main.obra') }}" href="{{ url_for('main.obras') }}"><i class="bi bi-cone-striped"></i> Obras</a></li>
-        <li class="nav-item"><a class="nav-link {{ 'active' if ep in ('main.financeiro', 'main.lancamento_form') }}" href="{{ url_for('main.financeiro') }}"><i class="bi bi-cash-coin"></i> Entradas e Saídas</a></li>
-        <li class="nav-item"><a class="nav-link {{ 'active' if ep.startswith('cad.nota') }}" href="{{ url_for('cad.notas') }}"><i class="bi bi-receipt"></i> Notas Fiscais</a></li>
-        <li class="nav-item"><a class="nav-link {{ 'active' if ep.startswith('cad.contrato') }}" href="{{ url_for('cad.contratos') }}"><i class="bi bi-file-earmark-text"></i> Contratos</a></li>
-        <li class="nav-item"><a class="nav-link {{ 'active' if ep.startswith('cad.funcionario') }}" href="{{ url_for('cad.funcionarios') }}"><i class="bi bi-people"></i> Funcionários</a></li>
-        <li class="nav-item"><a class="nav-link {{ 'active' if ep.startswith('cad.pagamento') }}" href="{{ url_for('cad.pagamentos') }}"><i class="bi bi-wallet2"></i> Pagamentos</a></li>
-        <li class="nav-item"><a class="nav-link {{ 'active' if ep == 'main.relatorios' }}" href="{{ url_for('main.relatorios') }}"><i class="bi bi-bar-chart"></i> Relatórios</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {{ 'active' if ep.startswith('com.cliente') or ep.startswith('com.venda') }}" href="#" data-bs-toggle="dropdown"><i class="bi bi-person-vcard"></i> Clientes / Vendas</a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('com.clientes') }}"><i class="bi bi-person-lines-fill"></i> Clientes</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('com.vendas') }}"><i class="bi bi-house-check"></i> Vendas</a></li>
+          </ul>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {{ 'active' if ep in ('main.financeiro', 'main.lancamento_form', 'main.relatorios') or ep.startswith('cad.nota') or ep.startswith('cad.pagamento') }}" href="#" data-bs-toggle="dropdown"><i class="bi bi-cash-coin"></i> Financeiro</a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('main.financeiro') }}"><i class="bi bi-arrow-left-right"></i> Entradas e saídas</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('cad.notas') }}"><i class="bi bi-receipt"></i> Notas fiscais</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('cad.pagamentos') }}"><i class="bi bi-wallet2"></i> Pagamentos de funcionários</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('main.relatorios') }}"><i class="bi bi-bar-chart"></i> Relatórios</a></li>
+          </ul>
+        </li>
+        <li class="nav-item"><a class="nav-link {{ 'active' if ep.startswith('com.fornecedor') }}" href="{{ url_for('com.fornecedores') }}"><i class="bi bi-truck"></i> Fornecedores</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {{ 'active' if ep == 'com.juridico' or ep.startswith('cad.contrato') }}" href="#" data-bs-toggle="dropdown"><i class="bi bi-bank"></i> Jurídico</a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('com.juridico') }}"><i class="bi bi-folder2-open"></i> Documentos jurídicos</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('cad.contratos') }}"><i class="bi bi-file-earmark-text"></i> Contratos</a></li>
+          </ul>
+        </li>
       </ul>
+      <form class="d-flex d-xl-none d-xxl-flex me-2 my-2 my-xl-0" action="{{ url_for('com.documentos') }}">
+        <input class="form-control form-control-sm" name="busca" placeholder="Buscar documento..." style="min-width:170px">
+      </form>
       <ul class="navbar-nav">
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-person-circle"></i> {{ current_user.nome }}</a>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="{{ url_for('main.empresa') }}"><i class="bi bi-building-gear"></i> Dados da empresa</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('com.documentos') }}"><i class="bi bi-search"></i> Todos os documentos</a></li>
             {% if current_user.is_admin %}
             <li><a class="dropdown-item" href="{{ url_for('auth.usuarios') }}"><i class="bi bi-person-gear"></i> Usuários</a></li>
             {% endif %}

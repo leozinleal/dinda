@@ -1,19 +1,24 @@
 {% extends 'base.html' %}
-{% from '_macros.html' import csrf %}
+{% from '_macros.html' import csrf, documentos_painel %}
 {% block content %}
-<div class="titulo-pagina"><h1>Dados da empresa</h1></div>
-<div class="card" style="max-width:900px"><div class="card-body">
+<div class="titulo-pagina"><h1>Empresa</h1></div>
+<div class="row g-3"><div class="col-xl-5">
+<div class="card"><div class="card-header bg-white"><strong><i class="bi bi-info-circle"></i> Dados da empresa</strong></div><div class="card-body">
   <form method="post" class="row g-3">
     {{ csrf() }}
-    <div class="col-md-8"><label class="form-label">Razão social</label><input class="form-control" name="razao_social" value="{{ emp.razao_social or '' }}"></div>
-    <div class="col-md-4"><label class="form-label">Nome fantasia</label><input class="form-control" name="nome_fantasia" value="{{ emp.nome_fantasia or '' }}"></div>
-    <div class="col-md-4"><label class="form-label">CNPJ</label><input class="form-control" name="cnpj" value="{{ emp.cnpj or '' }}"></div>
-    <div class="col-md-4"><label class="form-label">Inscrição estadual</label><input class="form-control" name="inscricao_estadual" value="{{ emp.inscricao_estadual or '' }}"></div>
-    <div class="col-md-4"><label class="form-label">Responsável</label><input class="form-control" name="responsavel" value="{{ emp.responsavel or '' }}"></div>
+    <div class="col-12"><label class="form-label">Razão social</label><input class="form-control" name="razao_social" value="{{ emp.razao_social or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Nome fantasia</label><input class="form-control" name="nome_fantasia" value="{{ emp.nome_fantasia or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">CNPJ</label><input class="form-control" name="cnpj" value="{{ emp.cnpj or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Inscrição estadual</label><input class="form-control" name="inscricao_estadual" value="{{ emp.inscricao_estadual or '' }}"></div>
+    <div class="col-md-6"><label class="form-label">Responsável</label><input class="form-control" name="responsavel" value="{{ emp.responsavel or '' }}"></div>
     <div class="col-12"><label class="form-label">Endereço</label><input class="form-control" name="endereco" value="{{ emp.endereco or '' }}"></div>
     <div class="col-md-6"><label class="form-label">Telefone</label><input class="form-control" name="telefone" value="{{ emp.telefone or '' }}"></div>
     <div class="col-md-6"><label class="form-label">E-mail</label><input type="email" class="form-control" name="email" value="{{ emp.email or '' }}"></div>
     <div class="col-12"><button class="btn btn-primary">Salvar</button></div>
   </form>
+</div></div>
+</div>
+<div class="col-xl-7">
+  {{ documentos_painel(docs, 'empresa', None, categorias_doc, url_for('main.empresa'), hoje, 'Documentos da empresa') }}
 </div></div>
 {% endblock %}

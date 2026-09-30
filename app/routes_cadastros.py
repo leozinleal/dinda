@@ -7,7 +7,7 @@ from sqlalchemy import func, or_
 
 from .models import (
     CATEGORIAS_ENTRADA, CATEGORIAS_SAIDA, CONTRATO_STATUS, CONTRATO_TIPOS, FORMAS_PAGAMENTO,
-    TIPOS_CONTRATACAO, TIPOS_PAGAMENTO, Contrato, Funcionario, Lancamento, NotaFiscal,
+    TIPOS_CONTRATACAO, TIPOS_PAGAMENTO, Contrato, Fornecedor, Funcionario, Lancamento, NotaFiscal,
     PagamentoFuncionario, db,
 )
 from .routes import obras_opcoes
@@ -51,7 +51,7 @@ def notas():
 def nota_form(id=None):
     nota = db.get_or_404(NotaFiscal, id) if id else NotaFiscal(
         tipo=request.args.get("tipo", "entrada"), data_emissao=date.today(),
-        obra_id=parse_int(request.args.get("obra")),
+        obra_id=parse_int(request.args.get("obra")), fornecedor_id=parse_int(request.args.get("fornecedor")),
     )
     gerar = nota.lancamento is not None if id else True
     categoria = nota.lancamento.categoria if nota.lancamento else ""
@@ -71,6 +71,11 @@ def nota_form(id=None):
             nota.data_emissao = parse_data(request.form.get("data_emissao")) or date.today()
             nota.descricao = _texto("descricao")
             nota.obra_id = parse_int(request.form.get("obra_id"))
+            nota.fornecedor_id = parse_int(request.form.get("fornecedor_id"))
+            fornecedor = db.session.get(Fornecedor, nota.fornecedor_id) if nota.fornecedor_id else None
+            if fornecedor:
+                nota.parceiro = nota.parceiro or fornecedor.nome
+                nota.cpf_cnpj = nota.cpf_cnpj or fornecedor.cpf_cnpj
             salvar_anexo(nota)
         except ValueError as e:
             flash(str(e), "danger")
@@ -84,6 +89,7 @@ def nota_form(id=None):
             l.valor = nota.valor
             l.data = nota.data_emissao
             l.obra_id = nota.obra_id
+            l.fornecedor_id = nota.fornecedor_id
             l.categoria = categoria
             l.forma_pagamento = forma
             nota.lancamento = l
@@ -102,6 +108,7 @@ def _render_nota(nota, gerar, categoria, forma):
         "notas/form.html", nota=nota, gerar=gerar, categoria=categoria, forma=forma,
         obras=obras_opcoes(), categorias_entrada=CATEGORIAS_ENTRADA,
         categorias_saida=CATEGORIAS_SAIDA, formas=FORMAS_PAGAMENTO,
+        fornecedores=Fornecedor.query.order_by(Fornecedor.nome).all(),
     )
 
 

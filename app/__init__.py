@@ -1,10 +1,11 @@
 import os
 import secrets
+from datetime import date
 
 from flask import Flask, redirect, request, url_for
 from flask_login import LoginManager, current_user
 
-from .models import Usuario, db
+from .models import Usuario, atualizar_banco, db
 from .utils import csrf_token, formata_data, formata_moeda, url_segura, verificar_csrf
 
 login_manager = LoginManager()
@@ -51,15 +52,20 @@ def create_app(config=None):
 
     from .routes import bp_auth, bp_main
     from .routes_cadastros import bp_cad
+    from .routes_comercial import bp_com
 
     app.register_blueprint(bp_auth)
     app.register_blueprint(bp_main)
     app.register_blueprint(bp_cad)
+    app.register_blueprint(bp_com)
 
     app.jinja_env.filters["moeda"] = formata_moeda
     app.jinja_env.filters["data"] = formata_data
     app.jinja_env.globals["csrf_token"] = csrf_token
     app.jinja_env.globals["url_segura"] = url_segura
+    from .routes_comercial import dono_documento
+
+    app.jinja_env.globals["dono_documento"] = dono_documento
 
     @app.before_request
     def _antes():
@@ -73,9 +79,9 @@ def create_app(config=None):
         from .models import Empresa
 
         empresa = Empresa.get() if current_user.is_authenticated else None
-        return {"empresa_atual": empresa}
+        return {"empresa_atual": empresa, "hoje": date.today()}
 
     with app.app_context():
-        db.create_all()
+        atualizar_banco()
 
     return app

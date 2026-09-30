@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import botao_excluir, documentos_painel, anexo_link %}
+{% block content %}
+{% set aqui = url_for('com.venda_detalhe', id=v.id) %}
+<div class="titulo-pagina">
+  <div><h1>Venda: {{ v.unidade or 'sem unidade' }}</h1>
+    <div class="text-muted"><a href="{{ url_for('com.cliente_detalhe', id=v.cliente.id) }}">{{ v.cliente.nome }}</a>
+      {% if v.obra %} · <a href="{{ url_for('main.obra_detalhe', id=v.obra.id) }}">{{ v.obra.nome }}</a>{% endif %}
+      · <span class="badge text-bg-light border">{{ v.status }}</span></div></div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-success" href="{{ url_for('main.lancamento_form', venda=v.id, voltar=aqui) }}"><i class="bi bi-plus-circle"></i> Registrar recebimento</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('com.venda_form', id=v.id) }}"><i class="bi bi-pencil"></i> Editar</a>
+    {{ botao_excluir(url_for('com.venda_excluir', id=v.id), 'Excluir esta venda?') }}
+  </div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Valor da venda</div><div class="valor">{{ v.valor|moeda }}</div>
+    <div class="small text-muted">Vendido em {{ v.data_venda|data }}{% if v.corretor %} · {{ v.corretor }}{% endif %}</div></div></div></div>
+  <div class="col-md-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Recebido</div><div class="valor text-success">{{ v.recebido|moeda }}</div>
+    {% if v.valor %}{% set pct = v.recebido / v.valor * 100 %}<div class="progress mt-2"><div class="progress-bar bg-success" style="width: {{ [pct, 100]|min }}%"></div></div>
+    <div class="small text-muted">{{ '%.0f'|format(pct) }}% pago</div>{% endif %}</div></div></div>
+  <div class="col-md-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">A receber</div><div class="valor">{{ v.a_receber|moeda }}</div></div></div></div>
+</div>
+{% if v.condicoes or v.observacoes %}
+<div class="card mb-3"><div class="card-body">
+  {% if v.condicoes %}<strong>Condições de pagamento:</strong><div style="white-space:pre-line">{{ v.condicoes }}</div>{% endif %}
+  {% if v.observacoes %}<strong class="d-block mt-2">Observações:</strong><div style="white-space:pre-line">{{ v.observacoes }}</div>{% endif %}
+</div></div>
+{% endif %}
+<div class="row g-3">
+  <div class="col-xl-6">
+    <div class="card mb-3">
+      <div class="card-header bg-white"><strong><i class="bi bi-cash-stack"></i> Recebimentos</strong></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Data</th><th>Descrição</th><th>Forma</th><th class="text-end">Valor</th><th></th></tr></thead>
+          <tbody>
+          {% for l in recebimentos %}
+            <tr><td>{{ l.data|data }}</td><td>{{ l.descricao }} {{ anexo_link(l) }}</td><td>{{ l.forma_pagamento }}</td>
+              <td class="text-end {{ 'text-success' if l.tipo == 'entrada' else 'text-danger' }}">{{ l.valor|moeda }}</td>
+              <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.lancamento_form', id=l.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a></td></tr>
+          {% else %}<tr><td colspan="5" class="text-center text-muted py-3">Nenhum recebimento lançado.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-6">
+    {{ documentos_painel(docs, 'venda', v.id, categorias_doc, aqui, hoje, 'Documentos da venda') }}
+  </div>
+</div>
+{% endblock %}

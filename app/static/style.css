@@ -15,3 +15,5 @@ body { background: #f4f6f9; }
   body { background: #fff; }
 }
 .table td.text-end { white-space: nowrap; }
+.navbar .nav-link, .navbar-brand { white-space: nowrap; }
+@media (min-width: 1200px) and (max-width: 1499px) { .navbar .nav-link { padding-left: .35rem !important; padding-right: .35rem !important; font-size: .95rem; } .navbar-brand { font-size: 1.1rem; } }

@@ -63,6 +63,21 @@ def formata_data(d) -> str:
     return str(d)
 
 
+def gravar_arquivo(arquivo):
+    """Grava um arquivo enviado na pasta de anexos. Retorna (nome_em_disco, nome_original)."""
+    nome_original = arquivo.filename
+    ext = nome_original.rsplit(".", 1)[-1].lower() if "." in nome_original else ""
+    if ext not in EXTENSOES_PERMITIDAS:
+        raise ValueError(
+            f"Tipo de arquivo não permitido ({nome_original}). Use: " + ", ".join(sorted(EXTENSOES_PERMITIDAS))
+        )
+    nome_disco = f"{uuid.uuid4().hex}.{ext}"
+    arquivo.save(os.path.join(current_app.config["UPLOAD_FOLDER"], nome_disco))
+    # Mantém acentos no nome original (usado só para exibição/download), sem partes de caminho.
+    nome_limpo = os.path.basename(nome_original.replace("\\", "/")).strip()[:200]
+    return nome_disco, nome_limpo or secure_filename(nome_original) or nome_disco
+
+
 def salvar_anexo(obj, campo="arquivo"):
     """Salva o arquivo enviado no formulário (se houver) e grava no objeto. Remove o anterior."""
     arquivo = request.files.get(campo)
@@ -72,18 +87,11 @@ def salvar_anexo(obj, campo="arquivo"):
             obj.arquivo = None
             obj.arquivo_nome = None
         return
-    nome_original = arquivo.filename
-    ext = nome_original.rsplit(".", 1)[-1].lower() if "." in nome_original else ""
-    if ext not in EXTENSOES_PERMITIDAS:
-        raise ValueError(
-            "Tipo de arquivo não permitido. Use: " + ", ".join(sorted(EXTENSOES_PERMITIDAS))
-        )
-    nome_disco = f"{uuid.uuid4().hex}.{ext}"
-    arquivo.save(os.path.join(current_app.config["UPLOAD_FOLDER"], nome_disco))
+    nome_disco, nome_original = gravar_arquivo(arquivo)
     if obj.arquivo:
         remover_anexo(obj.arquivo)
     obj.arquivo = nome_disco
-    obj.arquivo_nome = secure_filename(nome_original) or nome_disco
+    obj.arquivo_nome = nome_original
 
 
 def remover_anexo(nome_disco):

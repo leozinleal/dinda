@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="titulo-pagina">
+  <h1>Vendas</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{{ url_for('com.clientes') }}"><i class="bi bi-person-lines-fill"></i> Clientes</a>
+    <a class="btn btn-primary" href="{{ url_for('com.venda_form') }}"><i class="bi bi-plus"></i> Nova venda</a>
+  </div>
+</div>
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-4"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Cliente, unidade, corretor..."></div>
+  <div class="col-md-3"><select class="form-select" name="obra"><option value="">Todas as obras</option>
+    {% for o in obras %}<option value="{{ o.id }}" {{ 'selected' if filtros.obra == o.id|string }}>{{ o.nome }}</option>{% endfor %}</select></div>
+  <div class="col-md-3"><select class="form-select" name="status"><option value="">Todos os status</option>
+    {% for s in status_opcoes %}<option {{ 'selected' if filtros.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button></div>
+</div></form>
+<div class="row g-3 mb-3">
+  <div class="col-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Total vendido</div><div class="valor">{{ total|moeda }}</div></div></div></div>
+  <div class="col-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Recebido</div><div class="valor text-success">{{ recebido|moeda }}</div></div></div></div>
+  <div class="col-4"><div class="card card-resumo"><div class="card-body"><div class="rotulo">A receber</div><div class="valor">{{ (total - recebido)|moeda }}</div></div></div></div>
+</div>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Data</th><th>Cliente</th><th>Obra</th><th>Unidade</th><th>Status</th><th class="text-end">Valor</th><th class="text-end">Recebido</th><th class="text-end">A receber</th></tr></thead>
+    <tbody>
+    {% for v in vendas %}
+      <tr class="{{ 'text-decoration-line-through text-muted' if v.status == 'Distratada' }}">
+        <td>{{ v.data_venda|data }}</td>
+        <td><a href="{{ url_for('com.venda_detalhe', id=v.id) }}">{{ v.cliente.nome }}</a></td>
+        <td>{{ v.obra.nome if v.obra else '—' }}</td><td>{{ v.unidade }}</td>
+        <td><span class="badge text-bg-light border">{{ v.status }}</span></td>
+        <td class="text-end">{{ v.valor|moeda }}</td><td class="text-end text-success">{{ v.recebido|moeda }}</td>
+        <td class="text-end fw-semibold">{{ v.a_receber|moeda }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">Nenhuma venda registrada.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

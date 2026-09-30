@@ -22,8 +22,12 @@
       {% for c in categorias %}<option {{ 'selected' if filtros.categoria == c }}>{{ c }}</option>{% endfor %}</select></div>
     <div class="col-6 col-md-2"><input type="date" class="form-control" name="de" value="{{ filtros.de }}" title="De"></div>
     <div class="col-6 col-md-2"><input type="date" class="form-control" name="ate" value="{{ filtros.ate }}" title="Até"></div>
-    <div class="col-md-6"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Buscar na descrição..."></div>
-    <div class="col-md-6 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-funnel"></i> Filtrar</button>
+    <div class="col-md-3"><select class="form-select" name="fornecedor"><option value="">Todos os fornecedores</option>
+      {% for f in fornecedores %}<option value="{{ f.id }}" {{ 'selected' if filtros.fornecedor == f.id|string }}>{{ f.nome_exibicao }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><select class="form-select" name="cliente"><option value="">Todos os clientes</option>
+      {% for c in clientes %}<option value="{{ c.id }}" {{ 'selected' if filtros.cliente == c.id|string }}>{{ c.nome }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Buscar na descrição..."></div>
+    <div class="col-md-3 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-funnel"></i> Filtrar</button>
       <a class="btn btn-outline-secondary" href="{{ url_for('main.financeiro') }}">Limpar</a></div>
   </div>
 </form>
@@ -41,7 +45,10 @@
     {% for l in lancamentos %}
       <tr>
         <td class="text-nowrap">{{ l.data|data }}</td>
-        <td>{{ l.descricao }} {{ anexo_link(l) }}{% if l.origem != 'Manual' %}<div class="small text-muted"><i class="bi bi-link-45deg"></i> {{ l.origem }}</div>{% endif %}</td>
+        <td>{{ l.descricao }} {{ anexo_link(l) }}<div class="small text-muted">{% if l.origem != 'Manual' %}<i class="bi bi-link-45deg"></i> {{ l.origem }} {% endif %}
+          {% if l.fornecedor %}<a class="text-muted" href="{{ url_for('com.fornecedor_detalhe', id=l.fornecedor.id) }}"><i class="bi bi-truck"></i> {{ l.fornecedor.nome_exibicao }}</a>{% endif %}
+          {% if l.cliente %}<a class="text-muted" href="{{ url_for('com.cliente_detalhe', id=l.cliente.id) }}"><i class="bi bi-person"></i> {{ l.cliente.nome }}</a>{% endif %}
+          {% if l.venda %}<a class="text-muted" href="{{ url_for('com.venda_detalhe', id=l.venda.id) }}"><i class="bi bi-house-check"></i> {{ l.venda.unidade }}</a>{% endif %}</div></td>
         <td>{{ l.categoria }}</td>
         <td>{% if l.obra %}<a href="{{ url_for('main.obra_detalhe', id=l.obra.id) }}">{{ l.obra.nome }}</a>{% else %}<span class="text-muted">Empresa</span>{% endif %}</td>
         <td>{{ l.forma_pagamento }}</td>

@@ -94,6 +94,7 @@ class Obra(db.Model):
 
 
 CATEGORIAS_ENTRADA = [
+    "Venda de unidade / Parcela de cliente",
     "Medição / Recebimento de cliente",
     "Adiantamento de cliente",
     "Aporte de sócio",
@@ -128,9 +129,15 @@ class Lancamento(ValorMixin, AnexoMixin, db.Model):
     obra_id = db.Column(db.Integer, db.ForeignKey("obra.id"))
     nota_id = db.Column(db.Integer, db.ForeignKey("nota_fiscal.id", ondelete="CASCADE"))
     pagamento_id = db.Column(db.Integer, db.ForeignKey("pagamento_funcionario.id", ondelete="CASCADE"))
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedor.id"))
+    cliente_id = db.Column(db.Integer, db.ForeignKey("cliente.id"))
+    venda_id = db.Column(db.Integer, db.ForeignKey("venda.id"))
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     obra = db.relationship("Obra", back_populates="lancamentos")
+    fornecedor = db.relationship("Fornecedor")
+    cliente = db.relationship("Cliente")
+    venda = db.relationship("Venda", back_populates="recebimentos")
     nota = db.relationship("NotaFiscal", back_populates="lancamento")
     pagamento = db.relationship("PagamentoFuncionario", back_populates="lancamento")
 
@@ -154,9 +161,11 @@ class NotaFiscal(ValorMixin, AnexoMixin, db.Model):
     data_emissao = db.Column(db.Date, nullable=False, default=date.today)
     descricao = db.Column(db.String(255), default="")
     obra_id = db.Column(db.Integer, db.ForeignKey("obra.id"))
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedor.id"))
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     obra = db.relationship("Obra")
+    fornecedor = db.relationship("Fornecedor")
     lancamento = db.relationship(
         "Lancamento", back_populates="nota", uselist=False, cascade="all, delete-orphan"
     )
@@ -242,3 +251,154 @@ class PagamentoFuncionario(ValorMixin, AnexoMixin, db.Model):
     lancamento = db.relationship(
         "Lancamento", back_populates="pagamento", uselist=False, cascade="all, delete-orphan"
     )
+
+
+# ---------------------------------------------------------------- Clientes e vendas
+
+class Cliente(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(200), nullable=False)
+    tipo_pessoa = db.Column(db.String(2), default="PF")  # PF | PJ
+    cpf_cnpj = db.Column(db.String(30), default="")
+    rg = db.Column(db.String(30), default="")
+    data_nascimento = db.Column(db.Date)
+    estado_civil = db.Column(db.String(40), default="")
+    profissao = db.Column(db.String(80), default="")
+    telefone = db.Column(db.String(40), default="")
+    email = db.Column(db.String(120), default="")
+    endereco = db.Column(db.String(255), default="")
+    observacoes = db.Column(db.Text, default="")
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+    vendas = db.relationship("Venda", back_populates="cliente")
+
+
+VENDA_STATUS = ["Reserva / Proposta", "Contrato assinado", "Em pagamento", "Quitada", "Escriturada", "Distratada"]
+
+
+class Venda(ValorMixin, db.Model):
+    """Venda de unidade (apartamento, casa, lote, sala...) de uma obra para um cliente."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("cliente.id"), nullable=False)
+    obra_id = db.Column(db.Integer, db.ForeignKey("obra.id"))
+    unidade = db.Column(db.String(120), default="")  # ex.: Apto 101 - Bloco A
+    data_venda = db.Column(db.Date, nullable=False, default=date.today)
+    status = db.Column(db.String(40), default="Contrato assinado")
+    condicoes = db.Column(db.Text, default="")  # entrada, parcelas, financiamento...
+    corretor = db.Column(db.String(120), default="")
+    observacoes = db.Column(db.Text, default="")
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cliente = db.relationship("Cliente", back_populates="vendas")
+    obra = db.relationship("Obra")
+    recebimentos = db.relationship("Lancamento", back_populates="venda")
+
+    @property
+    def recebido(self) -> Decimal:
+        return Decimal(sum(l.valor_centavos for l in self.recebimentos if l.tipo == "entrada")) / 100
+
+    @property
+    def a_receber(self) -> Decimal:
+        return self.valor - self.recebido
+
+
+# ---------------------------------------------------------------- Fornecedores
+
+CATEGORIAS_FORNECEDOR = [
+    "Material de construção", "Concreto / Aço", "Elétrica", "Hidráulica", "Acabamento",
+    "Madeira / Esquadrias", "Locação de equipamentos", "Mão de obra / Empreiteiro",
+    "Projetos / Engenharia", "Transporte / Frete", "Serviços", "Outros",
+]
+
+
+class Fornecedor(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(200), nullable=False)  # razão social ou nome
+    nome_fantasia = db.Column(db.String(200), default="")
+    cpf_cnpj = db.Column(db.String(30), default="")
+    categoria = db.Column(db.String(80), default="")
+    contato = db.Column(db.String(120), default="")  # pessoa de contato
+    telefone = db.Column(db.String(40), default="")
+    email = db.Column(db.String(120), default="")
+    endereco = db.Column(db.String(255), default="")
+    chave_pix = db.Column(db.String(120), default="")
+    dados_bancarios = db.Column(db.String(255), default="")
+    ativo = db.Column(db.Boolean, default=True)
+    observacoes = db.Column(db.Text, default="")
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def nome_exibicao(self):
+        return self.nome_fantasia or self.nome
+
+
+# ---------------------------------------------------------------- Documentos (anexos em qualquer área)
+
+CATEGORIAS_DOCUMENTO = {
+    "empresa": [
+        "Contrato social / alterações", "Cartão CNPJ", "Inscrição estadual / municipal", "Alvará",
+        "Certidões negativas", "Certificado digital", "Documentos dos sócios", "Registro CREA / CAU",
+        "Seguros", "Contabilidade", "Outros",
+    ],
+    "obra": [
+        "Projetos e plantas", "Alvará / licenças", "Matrícula / escritura do terreno", "Condomínio",
+        "Incorporação / memorial", "ART / RRT", "Habite-se", "Atas e reuniões", "Fotos", "Outros",
+    ],
+    "cliente": [
+        "RG / CPF / CNH", "Comprovante de residência", "Comprovante de renda", "Certidão de casamento / nascimento",
+        "Ficha cadastral", "Outros",
+    ],
+    "venda": [
+        "Proposta / reserva", "Contrato de compra e venda", "Comprovantes de pagamento", "Financiamento",
+        "Escritura / registro", "Distrato", "Outros",
+    ],
+    "fornecedor": [
+        "Cartão CNPJ", "Contrato", "Orçamento / proposta", "Certidões", "Dados bancários", "Outros",
+    ],
+    "juridico": [
+        "Processo judicial", "Notificação", "Procuração", "Parecer", "Acordo", "Contrato",
+        "Certidão", "Trabalhista", "Outros",
+    ],
+}
+ENTIDADES_DOCUMENTO = {
+    "empresa": "Empresa", "obra": "Obra", "cliente": "Cliente", "venda": "Venda",
+    "fornecedor": "Fornecedor", "juridico": "Jurídico",
+}
+
+
+class Documento(AnexoMixin, db.Model):
+    """Arquivo anexado a qualquer área do sistema (entidade + entidade_id)."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    entidade = db.Column(db.String(20), nullable=False, index=True)
+    entidade_id = db.Column(db.Integer, index=True)  # vazio para empresa / jurídico geral
+    titulo = db.Column(db.String(200), nullable=False)
+    categoria = db.Column(db.String(80), default="")
+    descricao = db.Column(db.Text, default="")
+    data_documento = db.Column(db.Date)
+    validade = db.Column(db.Date)
+    # Jurídico: pode ser ligado a uma obra, cliente ou fornecedor
+    obra_id = db.Column(db.Integer, db.ForeignKey("obra.id"))
+    parte = db.Column(db.String(200), default="")  # parte envolvida / nº do processo
+    status = db.Column(db.String(40), default="")
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+    obra = db.relationship("Obra")
+
+JURIDICO_STATUS = ["", "Em andamento", "Aguardando", "Concluído", "Arquivado"]
+
+
+def atualizar_banco():
+    """Cria tabelas novas e adiciona colunas que faltam em bancos criados por versões anteriores."""
+    from sqlalchemy import inspect, text
+
+    db.create_all()
+    insp = inspect(db.engine)
+    for tabela in db.metadata.sorted_tables:
+        existentes = {c["name"] for c in insp.get_columns(tabela.name)}
+        for coluna in tabela.columns:
+            if coluna.name not in existentes:
+                tipo = coluna.type.compile(dialect=db.engine.dialect)
+                with db.engine.begin() as conn:
+                    conn.execute(text(f'ALTER TABLE "{tabela.name}" ADD COLUMN "{coluna.name}" {tipo}'))

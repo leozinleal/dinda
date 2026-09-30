@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from '_macros.html' import valor_tipo, anexo_link, botao_excluir %}
+{% from '_macros.html' import valor_tipo, anexo_link, botao_excluir, documentos_painel %}
 {% block content %}
 {% set aqui = url_for('main.obra_detalhe', id=obra.id) %}
 <div class="titulo-pagina">
@@ -34,15 +34,32 @@
 {% if obra.observacoes %}<div class="alert alert-light border">{{ obra.observacoes }}</div>{% endif %}
 
 <ul class="nav nav-tabs" role="tablist">
-  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-lanc">Entradas e saídas ({{ lancamentos|length }})</button></li>
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-docs">Documentos ({{ docs|length }})</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-lanc">Entradas e saídas ({{ lancamentos|length }})</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-cat">Gastos por categoria</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-vendas">Vendas ({{ vendas|length }})</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-notas">Notas fiscais ({{ notas|length }})</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-contr">Contratos ({{ contratos|length }})</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-func">Equipe ({{ funcionarios|length }})</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pag">Pagamentos ({{ pagamentos|length }})</button></li>
 </ul>
 <div class="tab-content card border-top-0 rounded-top-0"><div class="card-body p-0 table-responsive">
-  <div class="tab-pane fade show active" id="t-lanc">
+  <div class="tab-pane fade show active p-2" id="t-docs">
+    {{ documentos_painel(docs, 'obra', obra.id, categorias_doc, aqui, hoje, 'Documentos da obra') }}
+  </div>
+  <div class="tab-pane fade" id="t-vendas">
+    <div class="p-2 text-end"><a class="btn btn-sm btn-primary" href="{{ url_for('com.venda_form', obra=obra.id) }}"><i class="bi bi-plus"></i> Nova venda</a></div>
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Unidade</th><th>Cliente</th><th>Data</th><th>Status</th><th class="text-end">Valor</th><th class="text-end">Recebido</th><th class="text-end">A receber</th></tr></thead>
+      <tbody>
+      {% for v in vendas %}
+        <tr><td><a href="{{ url_for('com.venda_detalhe', id=v.id) }}">{{ v.unidade or '—' }}</a></td><td>{{ v.cliente.nome }}</td><td>{{ v.data_venda|data }}</td>
+          <td>{{ v.status }}</td><td class="text-end">{{ v.valor|moeda }}</td><td class="text-end text-success">{{ v.recebido|moeda }}</td><td class="text-end">{{ v.a_receber|moeda }}</td></tr>
+      {% else %}<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma venda desta obra.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tab-pane fade" id="t-lanc">
     <table class="table table-hover mb-0">
       <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Forma</th><th class="text-end">Valor</th><th></th></tr></thead>
       <tbody>

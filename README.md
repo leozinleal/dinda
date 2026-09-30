@@ -1,18 +1,23 @@
 # Gestão da Construtora
 
-Sistema web para a administração de uma construtora. Ele reúne em um só lugar:
+Sistema web para a administração de uma construtora, organizado em 6 áreas:
 
-| Módulo | O que faz |
+| Área | O que tem |
 |---|---|
-| **Painel** | Entradas, saídas e resultado do mês, saldo acumulado, situação de cada obra (quanto do orçamento já foi usado), contratos vencendo e últimos lançamentos. |
-| **Obras** | Cadastro de cada obra (cliente, endereço, orçamento, datas e status). A página da obra mostra quanto foi recebido e gasto, os gastos por categoria, as notas, os contratos, a equipe e os pagamentos daquela obra. |
-| **Entradas e Saídas** | Livro-caixa com todas as movimentações, ligadas a uma obra ou à empresa (despesas gerais). Tem filtros por obra, tipo, categoria, período e busca, permite anexar comprovante e exportar para Excel (CSV). |
-| **Notas Fiscais** | Guarda as notas recebidas (compras) e emitidas (vendas/serviços) com o arquivo PDF, XML ou foto. Opcionalmente já lança o valor no financeiro. |
-| **Contratos** | Guarda os contratos com clientes, fornecedores, empreiteiros e funcionários, com o arquivo assinado, a vigência e o status. Mostra um alerta no painel quando o vencimento está a 30 dias ou menos. |
-| **Funcionários** | Cadastro da equipe (cargo, tipo de contratação, salário ou diária, PIX, dados bancários e obra onde trabalha), com o histórico de pagamentos de cada um. |
-| **Pagamentos** | Registra salários, vales, diárias, férias, 13º etc., com o comprovante. **Cada pagamento vira uma saída no financeiro automaticamente** e soma no custo da obra. |
-| **Relatórios** | Fluxo de caixa mês a mês do ano e totais por obra e por categoria. Pode ser impresso ou salvo em PDF pelo navegador. |
-| **Empresa / Usuários** | Dados da construtora e cadastro de outros usuários (por exemplo, o contador ou um sócio), cada um com o seu login. |
+| **1. Empresa** | Dados da empresa (razão social, CNPJ, endereço etc.) e **documentos da empresa**, como contrato social, cartão CNPJ, alvarás, certidões e certificado digital, com data de validade. Também fica aqui o cadastro de funcionários. |
+| **2. Obras** | Cada obra tem **documentos** (projetos, condomínio, alvarás, ART, matrícula, fotos...), entradas e saídas, gastos por categoria, vendas das unidades, notas, contratos, equipe e pagamentos. Também mostra o orçamento usado e o saldo da obra. |
+| **3. Clientes / Vendas** | Cadastro de clientes com documentos pessoais. Registra a venda de apartamentos, casas e lotes (unidade, valor, condições, status, corretor), com os recebimentos e o saldo **a receber**, além dos documentos da venda (contrato, comprovantes, financiamento). |
+| **4. Financeiro** | Painel de entradas e saídas com filtros por data, obra, tipo, categoria, fornecedor e cliente. Aceita comprovante anexado e exporta para Excel (CSV). Inclui notas fiscais, pagamentos de funcionários e relatórios (fluxo de caixa mês a mês, por obra e por categoria). |
+| **5. Fornecedores** | Lista com os dados de cada fornecedor (CNPJ, ramo, contato, PIX, banco), os **documentos** dele (contratos, orçamentos, certidões), o total pago, os pagamentos e as notas fiscais. |
+| **6. Jurídico** | Documentos jurídicos (processos, notificações, procurações, acordos...) com situação, partes ou número do processo, prazo e obra relacionada, além dos contratos com vencimento. |
+
+Outros recursos:
+
+- **Painel**: mostra o resultado do mês, o saldo, o valor a receber de vendas, as obras, os **documentos vencendo ou vencidos** e os contratos a vencer.
+- **Busca de documentos**: o campo no topo procura em todos os documentos de todas as áreas.
+- **Envio de vários arquivos de uma vez**: é possível anexar vários arquivos de uma só vez em qualquer área.
+- **Usuários**: cada pessoa tem o seu próprio login.
+- **Atualização**: quando o sistema é atualizado, o banco de dados é ajustado sozinho e os dados antigos continuam lá.
 
 ## Como rodar
 

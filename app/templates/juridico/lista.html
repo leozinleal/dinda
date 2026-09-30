@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, botao_excluir, validade_badge, obra_select %}
+{% block content %}
+{% set aqui = request.full_path %}
+<div class="titulo-pagina">
+  <h1>Jurídico</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{{ url_for('cad.contratos') }}"><i class="bi bi-file-earmark-text"></i> Contratos ({{ contratos_vigentes }} vigentes)</a>
+    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#novo-jur"><i class="bi bi-upload"></i> Anexar documentos jurídicos</button>
+  </div>
+</div>
+
+<div class="collapse {{ 'show' if not docs and not filtros.busca }}" id="novo-jur">
+  <div class="card card-body mb-3">
+  <form method="post" action="{{ url_for('com.documento_novo') }}" enctype="multipart/form-data" class="row g-2">
+    {{ csrf() }}
+    <input type="hidden" name="entidade" value="juridico"><input type="hidden" name="voltar" value="{{ aqui }}">
+    <div class="col-md-6"><label class="form-label small">Arquivos * <span class="text-muted">(pode escolher vários)</span></label><input type="file" class="form-control" name="arquivos" multiple required></div>
+    <div class="col-md-6"><label class="form-label small">Título <span class="text-muted">(se vazio, usa o nome do arquivo)</span></label><input class="form-control" name="titulo"></div>
+    <div class="col-md-3"><label class="form-label small">Categoria</label><select class="form-select" name="categoria"><option value="">—</option>
+      {% for c in categorias %}<option>{{ c }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small">Situação</label><select class="form-select" name="status">
+      {% for s in status_opcoes %}<option value="{{ s }}">{{ s or '—' }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small">Data do documento</label><input type="date" class="form-control" name="data_documento"></div>
+    <div class="col-md-3"><label class="form-label small">Prazo / validade</label><input type="date" class="form-control" name="validade"></div>
+    <div class="col-md-6"><label class="form-label small">Partes / nº do processo</label><input class="form-control" name="parte"></div>
+    <div class="col-md-6"><label class="form-label small">Obra relacionada</label>{{ obra_select(obras, None, rotulo_vazio='— nenhuma —') }}</div>
+    <div class="col-12"><label class="form-label small">Observações</label><input class="form-control" name="descricao"></div>
+    <div class="col-12"><button class="btn btn-primary btn-sm"><i class="bi bi-upload"></i> Enviar</button></div>
+  </form>
+  </div>
+</div>
+
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-4"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Título, partes, nº do processo..."></div>
+  <div class="col-md-2"><select class="form-select" name="categoria"><option value="">Todas as categorias</option>
+    {% for c in categorias %}<option {{ 'selected' if filtros.categoria == c }}>{{ c }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><select class="form-select" name="status"><option value="">Qualquer situação</option>
+    {% for s in status_opcoes if s %}<option {{ 'selected' if filtros.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><select class="form-select" name="obra"><option value="">Todas as obras</option>
+    {% for o in obras %}<option value="{{ o.id }}" {{ 'selected' if filtros.obra == o.id|string }}>{{ o.nome }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button></div>
+</div></form>
+
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Documento</th><th>Categoria</th><th>Partes / processo</th><th>Obra</th><th>Situação</th><th>Data</th><th>Prazo</th><th></th></tr></thead>
+    <tbody>
+    {% for d in docs %}
+      <tr>
+        <td><a href="{{ url_for('main.arquivo', nome=d.arquivo) }}" target="_blank"><i class="bi bi-file-earmark"></i> {{ d.titulo }}</a>
+          {% if d.descricao %}<div class="small text-muted">{{ d.descricao }}</div>{% endif %}</td>
+        <td class="small">{{ d.categoria }}</td><td class="small">{{ d.parte }}</td>
+        <td class="small">{{ d.obra.nome if d.obra else '' }}</td>
+        <td>{% if d.status %}<span class="badge text-bg-light border">{{ d.status }}</span>{% endif %}</td>
+        <td class="small text-nowrap">{{ d.data_documento|data }}</td>
+        <td class="small">{{ validade_badge(d, hoje) }}</td>
+        <td class="text-end text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('com.documento_form', id=d.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a>
+          {{ botao_excluir(url_for('com.documento_excluir', id=d.id), 'Excluir este documento?', aqui) }}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">Nenhum documento jurídico.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

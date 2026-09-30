@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from '_macros.html' import valor_tipo, anexo_link %}
+{% from '_macros.html' import valor_tipo, anexo_link, validade_badge %}
 {% block content %}
 <div class="titulo-pagina">
   <h1>Painel</h1>
@@ -20,7 +20,7 @@
     <div class="rotulo">Resultado do mês</div><div class="valor {{ 'text-success' if resumo.saldo_mes >= 0 else 'text-danger' }}">{{ resumo.saldo_mes|moeda }}</div></div></div></div>
   <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body">
     <div class="rotulo">Saldo acumulado</div><div class="valor {{ 'text-success' if resumo.saldo_total >= 0 else 'text-danger' }}">{{ resumo.saldo_total|moeda }}</div>
-    <div class="small text-muted">Folha paga no mês: {{ folha_mes|moeda }} · {{ funcionarios_ativos }} funcionário(s) ativo(s)</div></div></div></div>
+    <div class="small text-muted">A receber de vendas: <a href="{{ url_for('com.vendas') }}">{{ a_receber|moeda }}</a><br>Folha paga no mês: {{ folha_mes|moeda }}</div></div></div></div>
 </div>
 
 <div class="row g-3">
@@ -80,6 +80,21 @@
   </div>
 
   <div class="col-xl-4">
+    <div class="card mb-3">
+      <div class="card-header bg-white d-flex justify-content-between"><strong><i class="bi bi-file-earmark-excel"></i> Documentos vencendo (30 dias)</strong>
+        <a class="small" href="{{ url_for('com.documentos', vencimento='30dias') }}">ver</a></div>
+      <ul class="list-group list-group-flush">
+      {% for d in docs_vencendo %}
+        {% set dono = dono_documento(d) %}
+        <li class="list-group-item">
+          <a href="{{ url_for('main.arquivo', nome=d.arquivo) }}" target="_blank">{{ d.titulo }}</a>
+          <div class="small">{% if dono[1] %}<a class="text-muted" href="{{ dono[1] }}">{{ dono[0] }}</a>{% else %}{{ dono[0] }}{% endif %} · {{ validade_badge(d, hoje) }}</div>
+        </li>
+      {% else %}
+        <li class="list-group-item text-muted small">Nenhum documento vencendo.</li>
+      {% endfor %}
+      </ul>
+    </div>
     <div class="card">
       <div class="card-header bg-white"><strong><i class="bi bi-alarm"></i> Contratos vencendo (30 dias)</strong></div>
       <ul class="list-group list-group-flush">

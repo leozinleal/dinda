@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import validade_badge %}
+{% block content %}
+<div class="titulo-pagina"><h1>Todos os documentos</h1></div>
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-4"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="Título, nome do arquivo, observação..."></div>
+  <div class="col-md-2"><select class="form-select" name="entidade"><option value="">Todas as áreas</option>
+    {% for k, v in entidades.items() %}<option value="{{ k }}" {{ 'selected' if filtros.entidade == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><select class="form-select" name="categoria"><option value="">Todas as categorias</option>
+    {% for c in categorias %}<option {{ 'selected' if filtros.categoria == c }}>{{ c }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><select class="form-select" name="vencimento"><option value="">Qualquer validade</option>
+    <option value="30dias" {{ 'selected' if filtros.vencimento == '30dias' }}>Vencendo em 30 dias</option>
+    <option value="vencidos" {{ 'selected' if filtros.vencimento == 'vencidos' }}>Vencidos</option></select></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button></div>
+</div></form>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Documento</th><th>Onde está</th><th>Categoria</th><th>Enviado em</th><th>Validade</th><th></th></tr></thead>
+    <tbody>
+    {% for d in docs %}
+      {% set dono = dono_documento(d) %}
+      <tr>
+        <td><a href="{{ url_for('main.arquivo', nome=d.arquivo) }}" target="_blank"><i class="bi bi-file-earmark"></i> {{ d.titulo }}</a>
+          <div class="small text-muted">{{ d.arquivo_nome }}</div></td>
+        <td>{% if dono[1] %}<a href="{{ dono[1] }}">{{ dono[0] }}</a>{% else %}{{ dono[0] }}{% endif %}</td>
+        <td class="small">{{ d.categoria }}</td>
+        <td class="small">{{ d.criado_em|data }}</td>
+        <td class="small">{{ validade_badge(d, hoje) }}</td>
+        <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('com.documento_form', id=d.id, voltar=request.full_path) }}"><i class="bi bi-pencil"></i></a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">Nenhum documento encontrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

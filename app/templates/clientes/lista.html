@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="titulo-pagina">
+  <h1>Clientes</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{{ url_for('com.vendas') }}"><i class="bi bi-house-check"></i> Vendas</a>
+    <a class="btn btn-primary" href="{{ url_for('com.cliente_form') }}"><i class="bi bi-plus"></i> Novo cliente</a>
+  </div>
+</div>
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-10"><input class="form-control" name="busca" value="{{ busca }}" placeholder="Nome, CPF/CNPJ, telefone, e-mail..."></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button></div>
+</div></form>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Nome</th><th>CPF / CNPJ</th><th>Telefone</th><th>E-mail</th><th class="text-center">Compras</th></tr></thead>
+    <tbody>
+    {% for c in clientes %}
+      <tr><td><a href="{{ url_for('com.cliente_detalhe', id=c.id) }}">{{ c.nome }}</a></td><td>{{ c.cpf_cnpj }}</td>
+        <td>{{ c.telefone }}</td><td>{{ c.email }}</td><td class="text-center">{{ vendas.get(c.id, 0) }}</td></tr>
+    {% else %}
+      <tr><td colspan="5" class="text-center text-muted py-4">Nenhum cliente cadastrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

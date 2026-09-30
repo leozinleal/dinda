@@ -18,7 +18,10 @@
     <div class="col-md-2"><label class="form-label">Série</label><input class="form-control" name="serie" value="{{ nota.serie or '' }}"></div>
     <div class="col-md-3"><label class="form-label">Data de emissão *</label><input type="date" class="form-control" name="data_emissao" value="{{ nota.data_emissao or '' }}" required></div>
     <div class="col-md-3"><label class="form-label">Valor total *</label>{{ valor_input(nota.valor) }}</div>
-    <div class="col-md-8"><label class="form-label">Fornecedor / Cliente</label><input class="form-control" name="parceiro" value="{{ nota.parceiro or '' }}"></div>
+    <div class="col-md-12"><label class="form-label">Fornecedor cadastrado <span class="text-muted small">(opcional — preenche nome e CNPJ)</span></label>
+      <select class="form-select" name="fornecedor_id"><option value="">—</option>
+        {% for f in fornecedores %}<option value="{{ f.id }}" {{ 'selected' if nota.fornecedor_id == f.id }}>{{ f.nome_exibicao }}{% if f.cpf_cnpj %} – {{ f.cpf_cnpj }}{% endif %}</option>{% endfor %}</select></div>
+    <div class="col-md-8"><label class="form-label">Fornecedor / Cliente (nome na nota)</label><input class="form-control" name="parceiro" value="{{ nota.parceiro or '' }}"></div>
     <div class="col-md-4"><label class="form-label">CNPJ / CPF</label><input class="form-control" name="cpf_cnpj" value="{{ nota.cpf_cnpj or '' }}"></div>
     <div class="col-md-6"><label class="form-label">Obra</label>{{ obra_select(obras, nota.obra_id) }}</div>
     <div class="col-md-6"><label class="form-label">Descrição / itens</label><input class="form-control" name="descricao" value="{{ nota.descricao or '' }}" placeholder="Ex.: cimento, areia, ferragens"></div>

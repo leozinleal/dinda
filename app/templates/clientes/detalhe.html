@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import botao_excluir, documentos_painel %}
+{% block content %}
+{% set aqui = url_for('com.cliente_detalhe', id=c.id) %}
+<div class="titulo-pagina">
+  <div><h1>{{ c.nome }}</h1><div class="text-muted">{{ 'Pessoa jurídica' if c.tipo_pessoa == 'PJ' else 'Pessoa física' }}{% if c.cpf_cnpj %} · {{ c.cpf_cnpj }}{% endif %}</div></div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-success" href="{{ url_for('com.venda_form', cliente=c.id) }}"><i class="bi bi-house-add"></i> Nova venda</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('com.cliente_form', id=c.id) }}"><i class="bi bi-pencil"></i> Editar</a>
+    {{ botao_excluir(url_for('com.cliente_excluir', id=c.id), 'Excluir este cliente?') }}
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card mb-3"><div class="card-body">
+      <dl class="mb-0">
+        <dt>Telefone</dt><dd>{{ c.telefone or '—' }}</dd>
+        <dt>E-mail</dt><dd>{{ c.email or '—' }}</dd>
+        <dt>Endereço</dt><dd>{{ c.endereco or '—' }}</dd>
+        <dt>RG</dt><dd>{{ c.rg or '—' }}</dd>
+        <dt>Nascimento</dt><dd>{{ c.data_nascimento|data or '—' }}</dd>
+        <dt>Estado civil / profissão</dt><dd>{{ c.estado_civil or '—' }} · {{ c.profissao or '—' }}</dd>
+        {% if c.observacoes %}<dt>Observações</dt><dd>{{ c.observacoes }}</dd>{% endif %}
+      </dl>
+    </div></div>
+    <div class="card card-resumo"><div class="card-body">
+      <div class="rotulo">Total comprado</div><div class="valor">{{ total_vendas|moeda }}</div>
+      <div class="rotulo mt-2">Já pagou</div><div class="valor text-success">{{ total_recebido|moeda }}</div>
+      <div class="rotulo mt-2">Falta pagar</div><div class="valor">{{ (total_vendas - total_recebido)|moeda }}</div>
+    </div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header bg-white"><strong><i class="bi bi-house-check"></i> Compras</strong></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Obra / unidade</th><th>Data</th><th>Status</th><th class="text-end">Valor</th><th class="text-end">Pago</th></tr></thead>
+          <tbody>
+          {% for v in vendas %}
+            <tr><td><a href="{{ url_for('com.venda_detalhe', id=v.id) }}">{{ v.obra.nome if v.obra else '' }} {{ v.unidade }}</a></td>
+              <td>{{ v.data_venda|data }}</td><td>{{ v.status }}</td><td class="text-end">{{ v.valor|moeda }}</td><td class="text-end text-success">{{ v.recebido|moeda }}</td></tr>
+          {% else %}<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma compra registrada.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {{ documentos_painel(docs, 'cliente', c.id, categorias_doc, aqui, hoje, 'Documentos do cliente') }}
+  </div>
+</div>
+{% endblock %}
