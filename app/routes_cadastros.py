@@ -6,8 +6,8 @@ from flask_login import login_required
 from sqlalchemy import func, or_
 
 from .models import (
-    CATEGORIAS_ENTRADA, CATEGORIAS_SAIDA, CONTRATO_STATUS, CONTRATO_TIPOS, FORMAS_PAGAMENTO,
-    TIPOS_CONTRATACAO, TIPOS_PAGAMENTO, Contrato, Fornecedor, Funcionario, Lancamento, NotaFiscal,
+    CATEGORIAS_DOCUMENTO, CATEGORIAS_ENTRADA, CATEGORIAS_SAIDA, CONTRATO_STATUS, CONTRATO_TIPOS, FORMAS_PAGAMENTO,
+    TIPOS_CONTRATACAO, TIPOS_PAGAMENTO, Contrato, Documento, Fornecedor, Funcionario, Lancamento, NotaFiscal,
     PagamentoFuncionario, db,
 )
 from .routes import obras_opcoes
@@ -255,8 +255,11 @@ def _render_funcionario(f):
 def funcionario_detalhe(id):
     f = db.get_or_404(Funcionario, id)
     pagamentos = sorted(f.pagamentos, key=lambda p: (p.data_pagamento, p.id), reverse=True)
+    docs = (Documento.query.filter_by(entidade="funcionario", entidade_id=id)
+            .order_by(Documento.categoria, Documento.titulo).all())
     return render_template("funcionarios/detalhe.html", f=f, pagamentos=pagamentos,
-                           total=cent(sum(p.valor_centavos for p in pagamentos)))
+                           total=cent(sum(p.valor_centavos for p in pagamentos)),
+                           docs=docs, categorias_doc=CATEGORIAS_DOCUMENTO["funcionario"])
 
 
 @bp_cad.route("/funcionarios/<int:id>/excluir", methods=["POST"])
@@ -267,6 +270,9 @@ def funcionario_excluir(id):
         flash("Esse funcionário tem pagamentos registrados. Para manter o histórico, "
               "marque-o como inativo em vez de excluir.", "warning")
         return redirect(url_for("cad.funcionario_detalhe", id=id))
+    for d in Documento.query.filter_by(entidade="funcionario", entidade_id=id).all():
+        remover_anexo(d.arquivo)
+        db.session.delete(d)
     db.session.delete(f)
     db.session.commit()
     flash("Funcionário excluído.", "success")

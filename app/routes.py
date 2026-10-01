@@ -13,7 +13,7 @@ from sqlalchemy import func, or_
 from .models import (
     CATEGORIAS_ENTRADA, CATEGORIAS_SAIDA, FORMAS_PAGAMENTO, OBRA_STATUS,
     CATEGORIAS_DOCUMENTO, Cliente, Contrato, Documento, Empresa, Fornecedor, Funcionario, Lancamento,
-    NotaFiscal, Obra, PagamentoFuncionario, Usuario, Venda, db,
+    NotaFiscal, Obra, PagamentoFuncionario, Pedido, PEDIDO_STATUS_FINAIS, Usuario, Venda, db,
 )
 from .utils import (
     cent, formata_data, parse_data, parse_int, parse_valor, remover_anexo, render_sem_salvar,
@@ -187,11 +187,15 @@ def dashboard():
         Documento.query.filter(Documento.validade.isnot(None), Documento.validade <= hoje + timedelta(days=30))
         .order_by(Documento.validade).limit(15).all()
     )
+    pedidos_abertos = (
+        Pedido.query.filter(Pedido.status.notin_(PEDIDO_STATUS_FINAIS))
+        .order_by(Pedido.previsao_entrega.is_(None), Pedido.previsao_entrega).limit(10).all()
+    )
     vendas_ativas = Venda.query.filter(Venda.status != "Distratada").all()
     a_receber = sum((v.a_receber for v in vendas_ativas), cent(0))
 
     return render_template(
-        "dashboard.html", docs_vencendo=docs_vencendo, a_receber=a_receber,
+        "dashboard.html", docs_vencendo=docs_vencendo, pedidos_abertos=pedidos_abertos, a_receber=a_receber,
         resumo=resumo, obras=obras, totais=totais, geral=geral,
         contratos_vencendo=contratos_vencendo, ultimos=ultimos, hoje=hoje,
         folha_mes=folha_mes, funcionarios_ativos=Funcionario.query.filter_by(ativo=True).count(),
@@ -304,6 +308,7 @@ def obra_detalhe(id):
         pagamentos=PagamentoFuncionario.query.filter_by(obra_id=id)
         .order_by(PagamentoFuncionario.data_pagamento.desc()).all(),
         vendas=Venda.query.filter_by(obra_id=id).order_by(Venda.unidade).all(),
+        pedidos=Pedido.query.filter_by(obra_id=id).order_by(Pedido.data_pedido.desc()).all(),
         docs=Documento.query.filter_by(entidade="obra", entidade_id=id)
         .order_by(Documento.categoria, Documento.titulo).all(),
         categorias_doc=CATEGORIAS_DOCUMENTO["obra"], hoje=date.today(),
@@ -316,7 +321,7 @@ def obra_excluir(id):
     obra = db.get_or_404(Obra, id)
     vinculos = sum(
         m.query.filter_by(obra_id=id).count()
-        for m in (Lancamento, NotaFiscal, Contrato, PagamentoFuncionario, Funcionario, Venda)
+        for m in (Lancamento, NotaFiscal, Contrato, PagamentoFuncionario, Funcionario, Venda, Pedido)
     ) + Documento.query.filter_by(entidade="obra", entidade_id=id).count()
     if vinculos:
         flash("Essa obra possui lançamentos, documentos, vendas ou funcionários vinculados. "
@@ -415,6 +420,11 @@ def lancamento_form(id=None):
             fornecedor_id=parse_int(request.args.get("fornecedor")),
             cliente_id=parse_int(request.args.get("cliente")),
         )
+        pedido = db.session.get(Pedido, parse_int(request.args.get("pedido")) or 0)
+        if pedido:
+            l.tipo, l.pedido_id, l.fornecedor_id, l.obra_id = "saida", pedido.id, pedido.fornecedor_id, pedido.obra_id
+            l.descricao = f"Pagamento pedido {pedido.numero or ''} – {pedido.descricao}".replace("  ", " ")
+            l.valor = max(pedido.valor - pedido.pago, cent(0))
         venda = db.session.get(Venda, parse_int(request.args.get("venda")) or 0)
         if venda:
             l.tipo, l.venda_id, l.cliente_id, l.obra_id = "entrada", venda.id, venda.cliente_id, venda.obra_id
@@ -438,6 +448,11 @@ def lancamento_form(id=None):
             l.fornecedor_id = parse_int(request.form.get("fornecedor_id"))
             l.cliente_id = parse_int(request.form.get("cliente_id"))
             l.venda_id = parse_int(request.form.get("venda_id"))
+            l.pedido_id = parse_int(request.form.get("pedido_id"))
+            pedido = db.session.get(Pedido, l.pedido_id) if l.pedido_id else None
+            if pedido:
+                l.fornecedor_id = l.fornecedor_id or pedido.fornecedor_id
+                l.obra_id = l.obra_id or pedido.obra_id
             venda = db.session.get(Venda, l.venda_id) if l.venda_id else None
             if venda:
                 l.cliente_id = venda.cliente_id
@@ -462,6 +477,8 @@ def _render_lancamento(l):
             or_(Fornecedor.ativo.is_(True), Fornecedor.id == l.fornecedor_id)).order_by(Fornecedor.nome).all(),
         clientes=Cliente.query.order_by(Cliente.nome).all(),
         vendas=Venda.query.join(Cliente).order_by(Cliente.nome, Venda.unidade).all(),
+        pedidos=Pedido.query.filter(or_(Pedido.status.notin_(PEDIDO_STATUS_FINAIS), Pedido.id == l.pedido_id))
+        .order_by(Pedido.data_pedido.desc()).all(),
         categorias_entrada=CATEGORIAS_ENTRADA, categorias_saida=CATEGORIAS_SAIDA,
         formas=FORMAS_PAGAMENTO,
     )

@@ -27,6 +27,9 @@
     <div class="col-md-6"><label class="form-label">Cliente <span class="text-muted small">(para entradas)</span></label>
       <select class="form-select" name="cliente_id"><option value="">—</option>
         {% for c in clientes %}<option value="{{ c.id }}" {{ 'selected' if l.cliente_id == c.id }}>{{ c.nome }}</option>{% endfor %}</select></div>
+    <div class="col-md-6"><label class="form-label">Pedido a fornecedor <span class="text-muted small">(se for pagamento de um pedido)</span></label>
+      <select class="form-select" name="pedido_id"><option value="">—</option>
+        {% for p in pedidos %}<option value="{{ p.id }}" {{ 'selected' if l.pedido_id == p.id }}>{{ p.fornecedor.nome_exibicao }} – {{ p.descricao }}</option>{% endfor %}</select></div>
     <div class="col-md-6"><label class="form-label">Venda <span class="text-muted small">(se for parcela / pagamento de uma venda)</span></label>
       <select class="form-select" name="venda_id"><option value="">—</option>
         {% for v in vendas %}<option value="{{ v.id }}" {{ 'selected' if l.venda_id == v.id }}>{{ v.cliente.nome }} – {{ v.unidade or 'sem unidade' }}{% if v.obra %} ({{ v.obra.nome }}){% endif %}</option>{% endfor %}</select></div>

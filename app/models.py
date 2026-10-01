@@ -26,6 +26,11 @@ class AnexoMixin:
     arquivo = db.Column(db.String(255))  # nome salvo em disco
     arquivo_nome = db.Column(db.String(255))  # nome original enviado
 
+    @property
+    def anexo(self):
+        """(arquivo_em_disco, nome_original) do anexo a exibir, ou None."""
+        return (self.arquivo, self.arquivo_nome) if self.arquivo else None
+
 
 class Usuario(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -132,14 +137,24 @@ class Lancamento(ValorMixin, AnexoMixin, db.Model):
     fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedor.id"))
     cliente_id = db.Column(db.Integer, db.ForeignKey("cliente.id"))
     venda_id = db.Column(db.Integer, db.ForeignKey("venda.id"))
+    pedido_id = db.Column(db.Integer, db.ForeignKey("pedido.id"))
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     obra = db.relationship("Obra", back_populates="lancamentos")
     fornecedor = db.relationship("Fornecedor")
     cliente = db.relationship("Cliente")
     venda = db.relationship("Venda", back_populates="recebimentos")
+    pedido = db.relationship("Pedido", back_populates="pagamentos")
     nota = db.relationship("NotaFiscal", back_populates="lancamento")
     pagamento = db.relationship("PagamentoFuncionario", back_populates="lancamento")
+
+    @property
+    def anexo(self):
+        # Lançamentos automáticos mostram o arquivo da nota fiscal / comprovante do pagamento de origem.
+        for obj in (self, self.nota, self.pagamento):
+            if obj is not None and obj.arquivo:
+                return obj.arquivo, obj.arquivo_nome
+        return None
 
     @property
     def origem(self):
@@ -356,6 +371,14 @@ CATEGORIAS_DOCUMENTO = {
     "fornecedor": [
         "Cartão CNPJ", "Contrato", "Orçamento / proposta", "Certidões", "Dados bancários", "Outros",
     ],
+    "funcionario": [
+        "RG / CPF / CNH", "Comprovante de residência", "Carteira de trabalho (CTPS)", "Contrato de trabalho",
+        "ASO / exames", "Certificados / NRs", "EPI (fichas)", "Atestados", "Férias / rescisão", "Outros",
+    ],
+    "pedido": [
+        "Pedido / ordem de compra", "Orçamento", "Nota fiscal", "Boleto", "Comprovante de pagamento",
+        "Canhoto / comprovante de entrega", "Fotos", "Outros",
+    ],
     "juridico": [
         "Processo judicial", "Notificação", "Procuração", "Parecer", "Acordo", "Contrato",
         "Certidão", "Trabalhista", "Outros",
@@ -363,7 +386,8 @@ CATEGORIAS_DOCUMENTO = {
 }
 ENTIDADES_DOCUMENTO = {
     "empresa": "Empresa", "obra": "Obra", "cliente": "Cliente", "venda": "Venda",
-    "fornecedor": "Fornecedor", "juridico": "Jurídico",
+    "fornecedor": "Fornecedor", "funcionario": "Funcionário", "pedido": "Pedido",
+    "juridico": "Jurídico",
 }
 
 
@@ -385,6 +409,61 @@ class Documento(AnexoMixin, db.Model):
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     obra = db.relationship("Obra")
+
+# ---------------------------------------------------------------- Pedidos a fornecedores
+
+PEDIDO_STATUS = [
+    "Pendente", "Orçamento / cotação", "Aprovado", "Confirmado pelo fornecedor", "Em trânsito",
+    "Entregue parcialmente", "Entregue", "Cancelado",
+]
+PEDIDO_STATUS_FINAIS = ("Entregue", "Cancelado")
+
+
+class Pedido(ValorMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedor.id"), nullable=False)
+    obra_id = db.Column(db.Integer, db.ForeignKey("obra.id"))
+    numero = db.Column(db.String(60), default="")  # nº do pedido / ordem de compra
+    descricao = db.Column(db.String(255), nullable=False)  # ex.: 200 sacos de cimento CP-II
+    itens = db.Column(db.Text, default="")
+    data_pedido = db.Column(db.Date, nullable=False, default=date.today)
+    previsao_entrega = db.Column(db.Date)
+    data_entrega = db.Column(db.Date)
+    status = db.Column(db.String(40), default="Pendente")
+    condicoes = db.Column(db.String(255), default="")  # forma / prazo de pagamento
+    observacoes = db.Column(db.Text, default="")
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+    fornecedor = db.relationship("Fornecedor")
+    obra = db.relationship("Obra")
+    pagamentos = db.relationship("Lancamento", back_populates="pedido")
+    historico = db.relationship(
+        "PedidoHistorico", back_populates="pedido", cascade="all, delete-orphan",
+        order_by="PedidoHistorico.criado_em.desc()",
+    )
+
+    @property
+    def pago(self) -> Decimal:
+        return Decimal(sum(l.valor_centavos for l in self.pagamentos if l.tipo == "saida")) / 100
+
+    @property
+    def atrasado(self):
+        return (self.status not in PEDIDO_STATUS_FINAIS and self.previsao_entrega is not None
+                and self.previsao_entrega < date.today())
+
+
+class PedidoHistorico(db.Model):
+    """Registro de cada mudança de status / anotação do pedido, para acompanhamento."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    pedido_id = db.Column(db.Integer, db.ForeignKey("pedido.id"), nullable=False)
+    status = db.Column(db.String(40), default="")
+    observacao = db.Column(db.Text, default="")
+    usuario = db.Column(db.String(120), default="")
+    criado_em = db.Column(db.DateTime, default=datetime.now)
+
+    pedido = db.relationship("Pedido", back_populates="historico")
+
 
 JURIDICO_STATUS = ["", "Em andamento", "Aguardando", "Concluído", "Arquivado"]
 

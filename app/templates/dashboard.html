@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% from '_macros.html' import valor_tipo, anexo_link, validade_badge %}
+{% from 'pedidos/_status.html' import status_pedido %}
 {% block content %}
 <div class="titulo-pagina">
   <h1>Painel</h1>
@@ -80,6 +81,20 @@
   </div>
 
   <div class="col-xl-4">
+    <div class="card mb-3">
+      <div class="card-header bg-white d-flex justify-content-between"><strong><i class="bi bi-cart"></i> Pedidos em aberto</strong>
+        <a class="small" href="{{ url_for('com.pedidos', status='abertos') }}">ver</a></div>
+      <ul class="list-group list-group-flush">
+      {% for p in pedidos_abertos %}
+        <li class="list-group-item">
+          <a href="{{ url_for('com.pedido_detalhe', id=p.id) }}">{{ p.descricao }}</a>
+          <div class="small text-muted">{{ p.fornecedor.nome_exibicao }}{% if p.previsao_entrega %} · previsão {{ p.previsao_entrega|data }}{% endif %} · {{ status_pedido(p) }}</div>
+        </li>
+      {% else %}
+        <li class="list-group-item text-muted small">Nenhum pedido em aberto.</li>
+      {% endfor %}
+      </ul>
+    </div>
     <div class="card mb-3">
       <div class="card-header bg-white d-flex justify-content-between"><strong><i class="bi bi-file-earmark-excel"></i> Documentos vencendo (30 dias)</strong>
         <a class="small" href="{{ url_for('com.documentos', vencimento='30dias') }}">ver</a></div>

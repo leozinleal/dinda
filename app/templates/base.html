@@ -49,7 +49,13 @@
             <li><a class="dropdown-item" href="{{ url_for('main.relatorios') }}"><i class="bi bi-bar-chart"></i> Relatórios</a></li>
           </ul>
         </li>
-        <li class="nav-item"><a class="nav-link {{ 'active' if ep.startswith('com.fornecedor') }}" href="{{ url_for('com.fornecedores') }}"><i class="bi bi-truck"></i> Fornecedores</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {{ 'active' if ep.startswith('com.fornecedor') or ep.startswith('com.pedido') }}" href="#" data-bs-toggle="dropdown"><i class="bi bi-truck"></i> Fornecedores</a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('com.fornecedores') }}"><i class="bi bi-truck"></i> Fornecedores</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('com.pedidos') }}"><i class="bi bi-cart"></i> Pedidos</a></li>
+          </ul>
+        </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle {{ 'active' if ep == 'com.juridico' or ep.startswith('cad.contrato') }}" href="#" data-bs-toggle="dropdown"><i class="bi bi-bank"></i> Jurídico</a>
           <ul class="dropdown-menu">
@@ -118,6 +124,18 @@
     document.querySelectorAll(sel.dataset.categorias).forEach(function (el) { el.addEventListener('change', atualizar); });
     atualizar();
   });
+</script>
+<script>
+  // Abas: lembra a aba aberta no endereço (#aba) para voltar a ela depois de salvar ou recarregar.
+  (function () {
+    const abas = document.querySelectorAll('[data-bs-toggle="tab"]');
+    if (!abas.length) return;
+    const alvo = location.hash && document.querySelector('[data-bs-target="' + location.hash + '"]');
+    if (alvo) bootstrap.Tab.getOrCreateInstance(alvo).show();
+    abas.forEach(function (a) {
+      a.addEventListener('shown.bs.tab', function () { history.replaceState(null, '', a.dataset.bsTarget); });
+    });
+  })();
 </script>
 {% block scripts %}{% endblock %}
 </body>

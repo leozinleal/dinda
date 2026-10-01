@@ -3,12 +3,13 @@ import os
 from datetime import date, timedelta
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 from sqlalchemy import func, or_
 
 from .models import (
-    CATEGORIAS_DOCUMENTO, CATEGORIAS_FORNECEDOR, ENTIDADES_DOCUMENTO, JURIDICO_STATUS, VENDA_STATUS,
-    Cliente, Contrato, Documento, Fornecedor, Lancamento, NotaFiscal, Obra, Venda, db,
+    CATEGORIAS_DOCUMENTO, CATEGORIAS_FORNECEDOR, ENTIDADES_DOCUMENTO, JURIDICO_STATUS, PEDIDO_STATUS,
+    PEDIDO_STATUS_FINAIS, Cliente, Contrato, Documento, Fornecedor, Funcionario, Lancamento, NotaFiscal, Obra,
+    Pedido, PedidoHistorico, VENDA_STATUS, Venda, db,
 )
 from .routes import obras_opcoes
 from .utils import (
@@ -46,6 +47,8 @@ def dono_documento(doc):
         "cliente": (Cliente, "com.cliente_detalhe", lambda c: c.nome),
         "venda": (Venda, "com.venda_detalhe", lambda v: f"{v.cliente.nome} – {v.unidade}"),
         "fornecedor": (Fornecedor, "com.fornecedor_detalhe", lambda f: f.nome_exibicao),
+        "funcionario": (Funcionario, "cad.funcionario_detalhe", lambda f: f.nome),
+        "pedido": (Pedido, "com.pedido_detalhe", lambda p: f"{p.descricao} ({p.fornecedor.nome_exibicao})"),
     }
     if doc.entidade == "empresa":
         return "Empresa", url_for("main.empresa")
@@ -394,6 +397,7 @@ def fornecedor_detalhe(id):
         total_pago=cent(sum(l.valor_centavos for l in lancs if l.tipo == "saida")),
         notas=NotaFiscal.query.filter_by(fornecedor_id=id).order_by(NotaFiscal.data_emissao.desc()).all(),
         docs=documentos_de("fornecedor", id), categorias_doc=CATEGORIAS_DOCUMENTO["fornecedor"],
+        pedidos=Pedido.query.filter_by(fornecedor_id=id).order_by(Pedido.data_pedido.desc(), Pedido.id.desc()).all(),
     )
 
 
@@ -401,8 +405,9 @@ def fornecedor_detalhe(id):
 @login_required
 def fornecedor_excluir(id):
     fo = db.get_or_404(Fornecedor, id)
-    if Lancamento.query.filter_by(fornecedor_id=id).count() or NotaFiscal.query.filter_by(fornecedor_id=id).count():
-        flash("Esse fornecedor tem lançamentos ou notas. Para manter o histórico, marque-o como inativo.", "warning")
+    if (Lancamento.query.filter_by(fornecedor_id=id).count() or NotaFiscal.query.filter_by(fornecedor_id=id).count()
+            or Pedido.query.filter_by(fornecedor_id=id).count()):
+        flash("Esse fornecedor tem lançamentos, notas ou pedidos. Para manter o histórico, marque-o como inativo.", "warning")
         return redirect(url_for("com.fornecedor_detalhe", id=id))
     for d in documentos_de("fornecedor", id):
         remover_anexo(d.arquivo)
@@ -411,3 +416,136 @@ def fornecedor_excluir(id):
     db.session.commit()
     flash("Fornecedor excluído.", "success")
     return redirect(url_for("com.fornecedores"))
+
+
+# ---------------------------------------------------------------- Pedidos a fornecedores
+
+def _registrar_historico(pedido, status, observacao=""):
+    pedido.historico.append(PedidoHistorico(
+        status=status, observacao=observacao,
+        usuario=getattr(current_user, "nome", "") or "",
+    ))
+
+
+@bp_com.route("/pedidos")
+@login_required
+def pedidos():
+    f = {k: request.args.get(k, "") for k in ("fornecedor", "obra", "status", "busca")}
+    q = Pedido.query.join(Fornecedor)
+    if f["fornecedor"]:
+        q = q.filter(Pedido.fornecedor_id == parse_int(f["fornecedor"]))
+    if f["obra"]:
+        q = q.filter(Pedido.obra_id == parse_int(f["obra"]))
+    if f["status"] == "abertos":
+        q = q.filter(Pedido.status.notin_(PEDIDO_STATUS_FINAIS))
+    elif f["status"] == "atrasados":
+        q = q.filter(Pedido.status.notin_(PEDIDO_STATUS_FINAIS), Pedido.previsao_entrega < date.today())
+    elif f["status"]:
+        q = q.filter(Pedido.status == f["status"])
+    q = _like(q, f["busca"], Pedido.descricao, Pedido.numero, Pedido.itens, Fornecedor.nome, Fornecedor.nome_fantasia)
+    lista = q.order_by(Pedido.data_pedido.desc(), Pedido.id.desc()).all()
+    return render_template(
+        "pedidos/lista.html", pedidos=lista, filtros=f, status_opcoes=PEDIDO_STATUS, obras=obras_opcoes(),
+        fornecedores=Fornecedor.query.order_by(Fornecedor.nome).all(),
+        total=sum((p.valor for p in lista if p.status != "Cancelado"), cent(0)),
+    )
+
+
+@bp_com.route("/pedidos/novo", methods=["GET", "POST"])
+@bp_com.route("/pedidos/<int:id>/editar", methods=["GET", "POST"])
+@login_required
+def pedido_form(id=None):
+    p = db.get_or_404(Pedido, id) if id else Pedido(
+        status="Pendente", data_pedido=date.today(),
+        fornecedor_id=parse_int(request.args.get("fornecedor")), obra_id=parse_int(request.args.get("obra")),
+    )
+    status_anterior = p.status if id else None
+    if request.method == "POST":
+        try:
+            p.fornecedor_id = parse_int(request.form.get("fornecedor_id"))
+            if not p.fornecedor_id or not db.session.get(Fornecedor, p.fornecedor_id):
+                raise ValueError("Escolha o fornecedor.")
+            p.descricao = _texto("descricao")
+            if not p.descricao:
+                raise ValueError("Descreva o pedido (ex.: 200 sacos de cimento).")
+            p.obra_id = parse_int(request.form.get("obra_id"))
+            p.numero = _texto("numero")
+            p.itens = request.form.get("itens", "")
+            p.valor = parse_valor(request.form.get("valor"))
+            p.data_pedido = parse_data(request.form.get("data_pedido")) or date.today()
+            p.previsao_entrega = parse_data(request.form.get("previsao_entrega"))
+            p.data_entrega = parse_data(request.form.get("data_entrega"))
+            p.status = _texto("status") or "Pendente"
+            p.condicoes = _texto("condicoes")
+            p.observacoes = request.form.get("observacoes", "")
+        except ValueError as e:
+            flash(str(e), "danger")
+            return render_sem_salvar(_render_pedido, p)
+        if not id:
+            _registrar_historico(p, p.status, "Pedido registrado.")
+        elif p.status != status_anterior:
+            _registrar_historico(p, p.status, f"Status alterado de “{status_anterior}” para “{p.status}”.")
+        if p.status == "Entregue" and not p.data_entrega:
+            p.data_entrega = date.today()
+        db.session.add(p)
+        db.session.commit()
+        flash("Pedido salvo.", "success")
+        return redirect(url_for("com.pedido_detalhe", id=p.id))
+    return _render_pedido(p)
+
+
+def _render_pedido(p):
+    return render_template(
+        "pedidos/form.html", p=p, obras=obras_opcoes(), status_opcoes=PEDIDO_STATUS,
+        fornecedores=Fornecedor.query.filter(
+            or_(Fornecedor.ativo.is_(True), Fornecedor.id == p.fornecedor_id)).order_by(Fornecedor.nome).all(),
+    )
+
+
+@bp_com.route("/pedidos/<int:id>")
+@login_required
+def pedido_detalhe(id):
+    p = db.get_or_404(Pedido, id)
+    return render_template(
+        "pedidos/detalhe.html", p=p, status_opcoes=PEDIDO_STATUS,
+        pagamentos=sorted(p.pagamentos, key=lambda l: (l.data, l.id), reverse=True),
+        docs=documentos_de("pedido", p.id), categorias_doc=CATEGORIAS_DOCUMENTO["pedido"],
+    )
+
+
+@bp_com.route("/pedidos/<int:id>/acompanhamento", methods=["POST"])
+@login_required
+def pedido_acompanhamento(id):
+    """Atualiza o status e/ou registra uma anotação no histórico do pedido."""
+    p = db.get_or_404(Pedido, id)
+    novo = _texto("status") or p.status
+    obs = _texto("observacao")
+    if novo == p.status and not obs:
+        flash("Escolha um novo status ou escreva uma anotação.", "warning")
+        return redirect(url_for("com.pedido_detalhe", id=id))
+    if novo not in PEDIDO_STATUS:
+        abort(400)
+    p.status = novo
+    if novo == "Entregue" and not p.data_entrega:
+        p.data_entrega = date.today()
+    _registrar_historico(p, novo, obs)
+    db.session.commit()
+    flash("Acompanhamento registrado.", "success")
+    return redirect(url_for("com.pedido_detalhe", id=id))
+
+
+@bp_com.route("/pedidos/<int:id>/excluir", methods=["POST"])
+@login_required
+def pedido_excluir(id):
+    p = db.get_or_404(Pedido, id)
+    if p.pagamentos:
+        flash("Esse pedido tem pagamentos lançados. Mude o status para 'Cancelado' em vez de excluir.", "warning")
+        return redirect(url_for("com.pedido_detalhe", id=id))
+    for d in documentos_de("pedido", id):
+        remover_anexo(d.arquivo)
+        db.session.delete(d)
+    fornecedor_id = p.fornecedor_id
+    db.session.delete(p)
+    db.session.commit()
+    flash("Pedido excluído.", "success")
+    return redirect(url_for("com.fornecedor_detalhe", id=fornecedor_id))

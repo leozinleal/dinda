@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% from '_macros.html' import botao_excluir, documentos_painel, valor_tipo, anexo_link %}
+{% from 'pedidos/_status.html' import status_pedido %}
 {% block content %}
 {% set aqui = url_for('com.fornecedor_detalhe', id=fo.id) %}
 <div class="titulo-pagina">
   <div><h1>{{ fo.nome_exibicao }}</h1><div class="text-muted">{{ fo.categoria }}{% if fo.cpf_cnpj %} · {{ fo.cpf_cnpj }}{% endif %}{% if not fo.ativo %} · <span class="badge text-bg-secondary">inativo</span>{% endif %}</div></div>
   <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-success" href="{{ url_for('com.pedido_form', fornecedor=fo.id) }}"><i class="bi bi-cart-plus"></i> Novo pedido</a>
     <a class="btn btn-danger" href="{{ url_for('main.lancamento_form', tipo='saida', fornecedor=fo.id, voltar=aqui) }}"><i class="bi bi-dash-circle"></i> Registrar pagamento</a>
     <a class="btn btn-outline-primary" href="{{ url_for('cad.nota_form', fornecedor=fo.id, voltar=aqui) }}"><i class="bi bi-receipt"></i> Nota fiscal</a>
     <a class="btn btn-outline-secondary" href="{{ url_for('com.fornecedor_form', id=fo.id) }}"><i class="bi bi-pencil"></i> Editar</a>
@@ -28,6 +30,21 @@
     <div class="card card-resumo"><div class="card-body"><div class="rotulo">Total pago</div><div class="valor text-danger">{{ total_pago|moeda }}</div></div></div>
   </div>
   <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center"><strong><i class="bi bi-cart"></i> Pedidos ({{ pedidos|length }})</strong>
+        <a class="btn btn-sm btn-success text-nowrap" href="{{ url_for('com.pedido_form', fornecedor=fo.id) }}"><i class="bi bi-plus"></i> Novo pedido</a></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Data</th><th>Pedido</th><th>Obra</th><th>Previsão</th><th>Status</th><th class="text-end">Valor</th></tr></thead>
+          <tbody>
+          {% for p in pedidos %}
+            <tr><td>{{ p.data_pedido|data }}</td><td><a href="{{ url_for('com.pedido_detalhe', id=p.id) }}">{{ p.descricao }}</a></td>
+              <td>{{ p.obra.nome if p.obra else '—' }}</td><td>{{ p.previsao_entrega|data }}</td><td>{{ status_pedido(p) }}</td><td class="text-end">{{ p.valor|moeda }}</td></tr>
+          {% else %}<tr><td colspan="6" class="text-center text-muted py-3">Nenhum pedido.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
     {{ documentos_painel(docs, 'fornecedor', fo.id, categorias_doc, aqui, hoje, 'Documentos do fornecedor') }}
     <div class="card mb-3">
       <div class="card-header bg-white"><strong><i class="bi bi-arrow-left-right"></i> Pagamentos / lançamentos</strong></div>

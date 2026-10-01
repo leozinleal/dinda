@@ -1,0 +1,6 @@
+{%- macro status_pedido(p) -%}
+{%- set cores = {'Pendente': 'warning', 'Orçamento / cotação': 'secondary', 'Aprovado': 'info', 'Confirmado pelo fornecedor': 'info',
+   'Em trânsito': 'primary', 'Entregue parcialmente': 'primary', 'Entregue': 'success', 'Cancelado': 'dark'} -%}
+<span class="badge text-bg-{{ cores.get(p.status, 'light') }}">{{ p.status }}</span>
+{%- if p.atrasado %} <span class="badge text-bg-danger">atrasado</span>{% endif -%}
+{%- endmacro -%}

@@ -32,8 +32,10 @@
 {% endmacro %}
 
 {% macro anexo_link(obj) %}
-{% if obj.arquivo %}
-<a href="{{ url_for('main.arquivo', nome=obj.arquivo) }}" target="_blank" title="{{ obj.arquivo_nome }}"><i class="bi bi-paperclip"></i></a>
+{% set a = obj.anexo %}
+{% if a %}
+<a href="{{ url_for('main.arquivo', nome=a[0]) }}" target="_blank" rel="noopener" title="Abrir {{ a[1] }}"
+   class="badge rounded-pill text-bg-light border text-decoration-none ms-1"><i class="bi bi-paperclip"></i> ver arquivo</a>
 {% endif %}
 {% endmacro %}
 

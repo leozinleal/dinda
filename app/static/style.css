@@ -17,3 +17,5 @@ body { background: #f4f6f9; }
 .table td.text-end { white-space: nowrap; }
 .navbar .nav-link, .navbar-brand { white-space: nowrap; }
 @media (min-width: 1200px) and (max-width: 1499px) { .navbar .nav-link { padding-left: .35rem !important; padding-right: .35rem !important; font-size: .95rem; } .navbar-brand { font-size: 1.1rem; } }
+.nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.nav-tabs .nav-link { white-space: nowrap; padding: .5rem .75rem; }

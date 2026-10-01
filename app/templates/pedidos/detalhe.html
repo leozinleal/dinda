@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, botao_excluir, documentos_painel, anexo_link %}
+{% from 'pedidos/_status.html' import status_pedido %}
+{% block content %}
+{% set aqui = url_for('com.pedido_detalhe', id=p.id) %}
+<div class="titulo-pagina">
+  <div><h1>{{ p.descricao }}</h1>
+    <div class="text-muted"><a href="{{ url_for('com.fornecedor_detalhe', id=p.fornecedor.id) }}">{{ p.fornecedor.nome_exibicao }}</a>
+      {% if p.numero %} · nº {{ p.numero }}{% endif %}{% if p.obra %} · <a href="{{ url_for('main.obra_detalhe', id=p.obra.id) }}">{{ p.obra.nome }}</a>{% endif %}
+      · {{ status_pedido(p) }}</div></div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-danger" href="{{ url_for('main.lancamento_form', pedido=p.id, voltar=aqui) }}"><i class="bi bi-dash-circle"></i> Registrar pagamento</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('com.pedido_form', id=p.id) }}"><i class="bi bi-pencil"></i> Editar</a>
+    {{ botao_excluir(url_for('com.pedido_excluir', id=p.id), 'Excluir este pedido?') }}
+  </div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Valor do pedido</div><div class="valor">{{ p.valor|moeda }}</div>
+    {% if p.condicoes %}<div class="small text-muted">{{ p.condicoes }}</div>{% endif %}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Pago</div><div class="valor text-danger">{{ p.pago|moeda }}</div>
+    <div class="small text-muted">falta {{ (p.valor - p.pago)|moeda }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body"><div class="rotulo">Pedido em</div><div class="valor">{{ p.data_pedido|data }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card card-resumo"><div class="card-body">
+    {% if p.data_entrega %}<div class="rotulo">Entregue em</div><div class="valor text-success">{{ p.data_entrega|data }}</div>
+    {% else %}<div class="rotulo">Previsão de entrega</div><div class="valor {{ 'text-danger' if p.atrasado }}">{{ p.previsao_entrega|data or '—' }}</div>{% endif %}
+  </div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-xl-5">
+    <div class="card mb-3">
+      <div class="card-header bg-white"><strong><i class="bi bi-clock-history"></i> Acompanhamento</strong></div>
+      <div class="card-body border-bottom bg-light">
+        <form method="post" action="{{ url_for('com.pedido_acompanhamento', id=p.id) }}" class="row g-2">
+          {{ csrf() }}
+          <div class="col-md-5"><label class="form-label small">Status</label><select class="form-select form-select-sm" name="status">
+            {% for s in status_opcoes %}<option {{ 'selected' if p.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+          <div class="col-md-7"><label class="form-label small">Anotação</label><input class="form-control form-control-sm" name="observacao" placeholder="Ex.: fornecedor confirmou entrega para sexta"></div>
+          <div class="col-12"><button class="btn btn-sm btn-primary"><i class="bi bi-check2"></i> Atualizar</button></div>
+        </form>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for h in p.historico %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between"><strong class="small">{{ h.status }}</strong>
+            <span class="small text-muted">{{ h.criado_em.strftime('%d/%m/%Y %H:%M') }}{% if h.usuario %} · {{ h.usuario }}{% endif %}</span></div>
+          {% if h.observacao %}<div class="small">{{ h.observacao }}</div>{% endif %}
+        </li>
+        {% else %}<li class="list-group-item small text-muted">Sem registros.</li>{% endfor %}
+      </ul>
+    </div>
+    {% if p.itens or p.observacoes %}
+    <div class="card mb-3"><div class="card-body">
+      {% if p.itens %}<strong>Itens</strong><div style="white-space:pre-line">{{ p.itens }}</div>{% endif %}
+      {% if p.observacoes %}<strong class="d-block mt-2">Observações</strong><div style="white-space:pre-line">{{ p.observacoes }}</div>{% endif %}
+    </div></div>
+    {% endif %}
+  </div>
+  <div class="col-xl-7">
+    {{ documentos_painel(docs, 'pedido', p.id, categorias_doc, aqui, hoje, 'Documentos do pedido') }}
+    <div class="card">
+      <div class="card-header bg-white"><strong><i class="bi bi-cash-stack"></i> Pagamentos do pedido</strong></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Data</th><th>Descrição</th><th>Forma</th><th class="text-end">Valor</th><th></th></tr></thead>
+          <tbody>
+          {% for l in pagamentos %}
+            <tr><td>{{ l.data|data }}</td><td>{{ l.descricao }} {{ anexo_link(l) }}</td><td>{{ l.forma_pagamento }}</td><td class="text-end">{{ l.valor|moeda }}</td>
+              <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.lancamento_form', id=l.id, voltar=aqui) }}"><i class="bi bi-pencil"></i></a></td></tr>
+          {% else %}<tr><td colspan="5" class="text-center text-muted py-3">Nenhum pagamento lançado.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

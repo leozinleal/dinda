@@ -48,6 +48,7 @@
         <td>{{ l.descricao }} {{ anexo_link(l) }}<div class="small text-muted">{% if l.origem != 'Manual' %}<i class="bi bi-link-45deg"></i> {{ l.origem }} {% endif %}
           {% if l.fornecedor %}<a class="text-muted" href="{{ url_for('com.fornecedor_detalhe', id=l.fornecedor.id) }}"><i class="bi bi-truck"></i> {{ l.fornecedor.nome_exibicao }}</a>{% endif %}
           {% if l.cliente %}<a class="text-muted" href="{{ url_for('com.cliente_detalhe', id=l.cliente.id) }}"><i class="bi bi-person"></i> {{ l.cliente.nome }}</a>{% endif %}
+          {% if l.pedido %}<a class="text-muted" href="{{ url_for('com.pedido_detalhe', id=l.pedido.id) }}"><i class="bi bi-cart"></i> pedido</a>{% endif %}
           {% if l.venda %}<a class="text-muted" href="{{ url_for('com.venda_detalhe', id=l.venda.id) }}"><i class="bi bi-house-check"></i> {{ l.venda.unidade }}</a>{% endif %}</div></td>
         <td>{{ l.categoria }}</td>
         <td>{% if l.obra %}<a href="{{ url_for('main.obra_detalhe', id=l.obra.id) }}">{{ l.obra.nome }}</a>{% else %}<span class="text-muted">Empresa</span>{% endif %}</td>

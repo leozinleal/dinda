@@ -23,7 +23,8 @@
         <td>{{ f.obra.nome if f.obra else '—' }}</td><td>{{ f.telefone }}</td>
         <td class="text-end">{{ f.salario|moeda }}</td>
         <td class="text-end">{{ pagos.get(f.id, 0)|moeda }}</td>
-        <td class="text-end"><a class="btn btn-sm btn-outline-success" href="{{ url_for('cad.pagamento_form', funcionario=f.id) }}" title="Pagar"><i class="bi bi-cash"></i> Pagar</a></td>
+        <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('cad.funcionario_detalhe', id=f.id) }}"><i class="bi bi-folder2-open"></i> Ficha e documentos</a>
+          <a class="btn btn-sm btn-outline-success" href="{{ url_for('cad.pagamento_form', funcionario=f.id) }}" title="Pagar"><i class="bi bi-cash"></i> Pagar</a></td>
       </tr>
     {% else %}
       <tr><td colspan="8" class="text-center text-muted py-4">Nenhum funcionário.</td></tr>

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'pedidos/_status.html' import status_pedido %}
+{% block content %}
+<div class="titulo-pagina">
+  <h1>Pedidos a fornecedores</h1>
+  <a class="btn btn-primary" href="{{ url_for('com.pedido_form') }}"><i class="bi bi-plus"></i> Novo pedido</a>
+</div>
+<form class="filtros card card-body mb-3"><div class="row g-2">
+  <div class="col-md-3"><input class="form-control" name="busca" value="{{ filtros.busca }}" placeholder="O que foi pedido, nº, fornecedor..."></div>
+  <div class="col-md-3"><select class="form-select" name="fornecedor"><option value="">Todos os fornecedores</option>
+    {% for f in fornecedores %}<option value="{{ f.id }}" {{ 'selected' if filtros.fornecedor == f.id|string }}>{{ f.nome_exibicao }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><select class="form-select" name="obra"><option value="">Todas as obras</option>
+    {% for o in obras %}<option value="{{ o.id }}" {{ 'selected' if filtros.obra == o.id|string }}>{{ o.nome }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><select class="form-select" name="status"><option value="">Todos os status</option>
+    <option value="abertos" {{ 'selected' if filtros.status == 'abertos' }}>Em aberto (não entregues)</option>
+    <option value="atrasados" {{ 'selected' if filtros.status == 'atrasados' }}>Atrasados</option>
+    {% for s in status_opcoes %}<option {{ 'selected' if filtros.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Buscar</button></div>
+</div></form>
+<div class="card"><div class="card-body p-0 table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Data</th><th>Pedido</th><th>Fornecedor</th><th>Obra</th><th>Previsão de entrega</th><th>Status</th><th class="text-end">Valor</th><th class="text-end">Pago</th></tr></thead>
+    <tbody>
+    {% for p in pedidos %}
+      <tr>
+        <td class="text-nowrap">{{ p.data_pedido|data }}</td>
+        <td><a href="{{ url_for('com.pedido_detalhe', id=p.id) }}">{{ p.descricao }}</a>{% if p.numero %}<div class="small text-muted">nº {{ p.numero }}</div>{% endif %}</td>
+        <td><a class="text-reset" href="{{ url_for('com.fornecedor_detalhe', id=p.fornecedor.id) }}">{{ p.fornecedor.nome_exibicao }}</a></td>
+        <td>{{ p.obra.nome if p.obra else '—' }}</td>
+        <td class="text-nowrap">{{ p.previsao_entrega|data }}{% if p.data_entrega %}<div class="small text-success">entregue {{ p.data_entrega|data }}</div>{% endif %}</td>
+        <td>{{ status_pedido(p) }}</td>
+        <td class="text-end">{{ p.valor|moeda }}</td><td class="text-end">{{ p.pago|moeda }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">Nenhum pedido encontrado.</td></tr>
+    {% endfor %}
+    </tbody>
+    {% if pedidos %}<tfoot><tr><th colspan="6" class="text-end">Total (sem cancelados)</th><th class="text-end">{{ total|moeda }}</th><th></th></tr></tfoot>{% endif %}
+  </table>
+</div></div>
+{% endblock %}

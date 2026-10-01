@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from '_macros.html' import anexo_link, botao_excluir %}
+{% from '_macros.html' import anexo_link, botao_excluir, documentos_painel %}
 {% block content %}
 {% set aqui = url_for('cad.funcionario_detalhe', id=f.id) %}
 <div class="titulo-pagina">
@@ -23,7 +23,9 @@
       {% if f.observacoes %}<dt>Observações</dt><dd>{{ f.observacoes }}</dd>{% endif %}
     </dl>
   </div></div></div>
-  <div class="col-lg-8"><div class="card">
+  <div class="col-lg-8">
+    {{ documentos_painel(docs, 'funcionario', f.id, categorias_doc, aqui, hoje, 'Documentos do funcionário') }}
+    <div class="card">
     <div class="card-header bg-white d-flex justify-content-between"><strong>Pagamentos</strong><span>Total: <strong>{{ total|moeda }}</strong></span></div>
     <div class="card-body p-0 table-responsive">
       <table class="table table-hover mb-0">

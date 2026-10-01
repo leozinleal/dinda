@@ -4,16 +4,17 @@ Sistema web para a administração de uma construtora, organizado em 6 áreas:
 
 | Área | O que tem |
 |---|---|
-| **1. Empresa** | Dados da empresa (razão social, CNPJ, endereço etc.) e **documentos da empresa**, como contrato social, cartão CNPJ, alvarás, certidões e certificado digital, com data de validade. Também fica aqui o cadastro de funcionários. |
+| **1. Empresa** | Dados da empresa (razão social, CNPJ, endereço etc.) e **documentos da empresa**, como contrato social, cartão CNPJ, alvarás, certidões e certificado digital, com data de validade. Também fica aqui o cadastro de funcionários, cada um com a **ficha e os documentos** dele (RG/CPF, comprovante de residência, CTPS, ASO, NRs...). |
 | **2. Obras** | Cada obra tem **documentos** (projetos, condomínio, alvarás, ART, matrícula, fotos...), entradas e saídas, gastos por categoria, vendas das unidades, notas, contratos, equipe e pagamentos. Também mostra o orçamento usado e o saldo da obra. |
 | **3. Clientes / Vendas** | Cadastro de clientes com documentos pessoais. Registra a venda de apartamentos, casas e lotes (unidade, valor, condições, status, corretor), com os recebimentos e o saldo **a receber**, além dos documentos da venda (contrato, comprovantes, financiamento). |
 | **4. Financeiro** | Painel de entradas e saídas com filtros por data, obra, tipo, categoria, fornecedor e cliente. Aceita comprovante anexado e exporta para Excel (CSV). Inclui notas fiscais, pagamentos de funcionários e relatórios (fluxo de caixa mês a mês, por obra e por categoria). |
-| **5. Fornecedores** | Lista com os dados de cada fornecedor (CNPJ, ramo, contato, PIX, banco), os **documentos** dele (contratos, orçamentos, certidões), o total pago, os pagamentos e as notas fiscais. |
+| **5. Fornecedores** | Lista com os dados de cada fornecedor (CNPJ, ramo, contato, PIX, banco), os **documentos** dele (contratos, orçamentos, certidões), o total pago, os pagamentos e as notas fiscais. Também tem os **pedidos** feitos a cada fornecedor, com status (pendente, aprovado, em trânsito, entregue...), previsão de entrega, aviso de atraso, histórico de acompanhamento, documentos e pagamentos do pedido. |
 | **6. Jurídico** | Documentos jurídicos (processos, notificações, procurações, acordos...) com situação, partes ou número do processo, prazo e obra relacionada, além dos contratos com vencimento. |
 
 Outros recursos:
 
 - **Painel**: mostra o resultado do mês, o saldo, o valor a receber de vendas, as obras, os **documentos vencendo ou vencidos** e os contratos a vencer.
+- **Arquivos nos lançamentos automáticos**: os lançamentos gerados por nota fiscal ou por pagamento de funcionário mostram o arquivo de origem para abrir.
 - **Busca de documentos**: o campo no topo procura em todos os documentos de todas as áreas.
 - **Envio de vários arquivos de uma vez**: é possível anexar vários arquivos de uma só vez em qualquer área.
 - **Usuários**: cada pessoa tem o seu próprio login.

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, obra_select, valor_input %}
+{% block content %}
+<div class="titulo-pagina"><h1>{{ 'Editar pedido' if p.id else 'Novo pedido a fornecedor' }}</h1></div>
+{% if not fornecedores %}<div class="alert alert-warning">Cadastre o fornecedor antes. <a href="{{ url_for('com.fornecedor_form') }}">Novo fornecedor</a></div>{% endif %}
+<div class="card" style="max-width:900px"><div class="card-body">
+  <form method="post" class="row g-3">
+    {{ csrf() }}
+    <div class="col-md-8"><label class="form-label">Fornecedor *</label><select class="form-select" name="fornecedor_id" required><option value="">— escolha —</option>
+      {% for f in fornecedores %}<option value="{{ f.id }}" {{ 'selected' if p.fornecedor_id == f.id }}>{{ f.nome_exibicao }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="form-label">Nº do pedido / ordem de compra</label><input class="form-control" name="numero" value="{{ p.numero or '' }}"></div>
+    <div class="col-md-8"><label class="form-label">O que foi pedido *</label><input class="form-control" name="descricao" value="{{ p.descricao or '' }}" required placeholder="Ex.: 200 sacos de cimento CP-II 50kg"></div>
+    <div class="col-md-4"><label class="form-label">Status</label><select class="form-select" name="status">
+      {% for s in status_opcoes %}<option {{ 'selected' if p.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="col-12"><label class="form-label">Itens / detalhes</label><textarea class="form-control" name="itens" rows="3" placeholder="Uma linha por item: quantidade, produto, preço...">{{ p.itens or '' }}</textarea></div>
+    <div class="col-md-4"><label class="form-label">Valor total</label>{{ valor_input(p.valor, required=False) }}</div>
+    <div class="col-md-8"><label class="form-label">Obra (para onde vai)</label>{{ obra_select(obras, p.obra_id) }}</div>
+    <div class="col-md-4"><label class="form-label">Data do pedido</label><input type="date" class="form-control" name="data_pedido" value="{{ p.data_pedido or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Previsão de entrega</label><input type="date" class="form-control" name="previsao_entrega" value="{{ p.previsao_entrega or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Data da entrega</label><input type="date" class="form-control" name="data_entrega" value="{{ p.data_entrega or '' }}"></div>
+    <div class="col-12"><label class="form-label">Forma / prazo de pagamento</label><input class="form-control" name="condicoes" value="{{ p.condicoes or '' }}" placeholder="Ex.: boleto 30 dias, PIX na entrega"></div>
+    <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="2">{{ p.observacoes or '' }}</textarea></div>
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('com.pedido_detalhe', id=p.id) if p.id else url_for('com.pedidos') }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}
