@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block content %}
+<div class="titulo-pagina"><h1>Backup</h1></div>
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card h-100"><div class="card-body">
+    <h2 class="h6"><i class="bi bi-cloud-arrow-down"></i> Baixar uma cópia agora</h2>
+    <p class="small text-muted">Gera um arquivo .zip com <strong>todos os dados e todos os documentos anexados</strong>.
+      Guarde no seu computador, num HD externo ou no Google Drive. Recomendado: uma vez por semana.</p>
+    <form method="post" action="{{ url_for('auth.backup_baixar') }}">{{ csrf() }}
+      <button class="btn btn-primary"><i class="bi bi-download"></i> Gerar e baixar backup</button></form>
+    <p class="small text-muted mt-3 mb-0">Pode demorar um pouco se houver muitos arquivos.</p>
+  </div></div></div>
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header bg-white"><strong><i class="bi bi-clock-history"></i> Backups automáticos do servidor</strong></div>
+    {% if existentes %}
+    <ul class="list-group list-group-flush">
+      {% for nome, tamanho in existentes %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="small">{{ nome }} <span class="text-muted">({{ '%.1f'|format(tamanho / 1048576) }} MB)</span></span>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('auth.backup_arquivo', nome=nome) }}"><i class="bi bi-download"></i></a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="card-body small text-muted">Nenhum backup automático encontrado. No servidor, o instalador agenda um backup
+      todos os dias de madrugada e guarda os últimos 30 dias.</div>
+    {% endif %}
+  </div></div>
+</div>
+{% endblock %}

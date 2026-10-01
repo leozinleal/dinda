@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block content %}
+<div class="titulo-pagina"><h1>Verificação em duas etapas</h1></div>
+<div class="card" style="max-width:760px"><div class="card-body">
+{% if current_user.totp_ativo %}
+  <div class="alert alert-success"><i class="bi bi-shield-check"></i> <strong>Ativada.</strong>
+    Ao entrar, o sistema pede a senha <em>e</em> o código do app autenticador do celular.</div>
+  <h2 class="h6 mt-4">Desativar</h2>
+  <p class="small text-muted">Só desative se for trocar de celular (depois ative de novo no celular novo).</p>
+  <form method="post" class="row g-2" style="max-width:520px">
+    {{ csrf() }}<input type="hidden" name="acao" value="desativar">
+    <div class="col-md-6"><input type="password" class="form-control" name="senha" placeholder="Sua senha" required></div>
+    <div class="col-md-6"><input class="form-control" name="codigo" inputmode="numeric" placeholder="Código do app" required></div>
+    <div class="col-12"><button class="btn btn-outline-danger">Desativar</button></div>
+  </form>
+{% else %}
+  <div class="alert alert-warning"><i class="bi bi-shield-exclamation"></i> <strong>Desativada.</strong>
+    Recomendado ativar: mesmo que alguém descubra a senha, não consegue entrar sem o seu celular.</div>
+  <ol class="mb-4">
+    <li>Instale no celular o app <strong>Google Authenticator</strong> ou <strong>Microsoft Authenticator</strong> (grátis, na App Store / Play Store).</li>
+    <li>No app, toque em <strong>+</strong> e escolha <strong>Ler código QR</strong>. Aponte para o código abaixo.</li>
+    <li>Digite o código de 6 dígitos que aparecer no app e clique em <strong>Ativar</strong>.</li>
+  </ol>
+  <div class="row g-4 align-items-center">
+    <div class="col-md-5 text-center"><div class="border rounded p-2 bg-white d-inline-block" style="width:220px">{{ qr|safe }}</div></div>
+    <div class="col-md-7">
+      <p class="small text-muted mb-1">Não consegue ler o QR? Digite esta chave no app:</p>
+      <code class="d-block mb-3 user-select-all" style="word-break:break-all">{{ segredo }}</code>
+      <form method="post" class="d-flex gap-2">
+        {{ csrf() }}<input type="hidden" name="acao" value="ativar">
+        <input class="form-control" name="codigo" inputmode="numeric" autocomplete="one-time-code" placeholder="Código de 6 dígitos" required style="max-width:200px">
+        <button class="btn btn-primary">Ativar</button>
+      </form>
+    </div>
+  </div>
+{% endif %}
+</div></div>
+{% endblock %}

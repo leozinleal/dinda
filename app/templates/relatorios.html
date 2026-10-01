@@ -4,9 +4,9 @@
 <div class="titulo-pagina">
   <h1>Relatórios {{ ano }}</h1>
   <div class="d-flex gap-2">
-    <form class="filtros"><select class="form-select" name="ano" onchange="this.form.submit()">
+    <form class="filtros"><select class="form-select" name="ano" data-autoenviar>
       {% for a in anos %}<option {{ 'selected' if a == ano }}>{{ a }}</option>{% endfor %}</select></form>
-    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+    <button class="btn btn-outline-secondary" type="button" data-imprimir><i class="bi bi-printer"></i> Imprimir</button>
   </div>
 </div>
 

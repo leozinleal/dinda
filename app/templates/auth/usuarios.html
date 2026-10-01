@@ -34,7 +34,7 @@
         {{ csrf() }}<input type="hidden" name="acao" value="criar">
         <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" name="nome" required></div>
         <div class="mb-2"><label class="form-label">E-mail</label><input type="email" class="form-control" name="email" required></div>
-        <div class="mb-2"><label class="form-label">Senha inicial</label><input type="password" class="form-control" name="senha" minlength="6" required></div>
+        <div class="mb-2"><label class="form-label">Senha inicial</label><input type="password" class="form-control" name="senha" minlength="10" required></div>
         <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="is_admin" id="adm" value="1">
           <label class="form-check-label" for="adm">Administrador (pode criar usuários)</label></div>
         <button class="btn btn-primary">Criar usuário</button>

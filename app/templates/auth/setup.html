@@ -11,14 +11,22 @@
   <div class="card"><div class="card-body p-4">
     <form method="post">
       {{ csrf() }}
+      {% if token_exigido %}
+      <div class="mb-3"><label class="form-label">Código de instalação</label>
+        <input class="form-control" name="token" required autocomplete="off">
+        <div class="form-text">Aparece no final da instalação do servidor. Protege esta tela para que só você crie o acesso.</div></div>
+      {% endif %}
       <div class="mb-3"><label class="form-label">Nome da construtora</label>
         <input class="form-control" name="empresa" placeholder="Ex.: Construtora Exemplo Ltda"></div>
       <div class="mb-3"><label class="form-label">Seu nome</label>
         <input class="form-control" name="nome" required></div>
       <div class="mb-3"><label class="form-label">E-mail (usado para entrar)</label>
         <input type="email" class="form-control" name="email" required></div>
-      <div class="mb-3"><label class="form-label">Senha (mínimo 6 caracteres)</label>
-        <input type="password" class="form-control" name="senha" minlength="6" required></div>
+      <div class="mb-3"><label class="form-label">Senha</label>
+        <input type="password" class="form-control" name="senha" minlength="10" required autocomplete="new-password">
+        <div class="form-text">Mínimo de 10 caracteres, com letras e números. Uma frase curta é ótima (ex.: <em>obra-azul-2026-sol</em>).</div></div>
+      <div class="mb-3"><label class="form-label">Repita a senha</label>
+        <input type="password" class="form-control" name="senha2" minlength="10" required autocomplete="new-password"></div>
       <button class="btn btn-primary w-100">Criar e entrar</button>
     </form>
   </div></div>

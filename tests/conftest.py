@@ -20,7 +20,7 @@ def client(app):
     c = app.test_client()
     c.get("/setup")
     c.post("/setup", data=_csrf(c, "/setup") | {
-        "nome": "Dinda", "email": "dinda@ex.com", "senha": "segredo1", "empresa": "Construtora X"})
+        "nome": "Dinda", "email": "dinda@ex.com", "senha": "segredo-forte-1", "senha2": "segredo-forte-1", "empresa": "Construtora X"})
     return c
 
 

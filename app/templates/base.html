@@ -76,6 +76,11 @@
             <li><a class="dropdown-item" href="{{ url_for('auth.usuarios') }}"><i class="bi bi-person-gear"></i> Usuários</a></li>
             {% endif %}
             <li><a class="dropdown-item" href="{{ url_for('auth.minha_senha') }}"><i class="bi bi-key"></i> Alterar senha</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('auth.seguranca') }}"><i class="bi bi-shield-lock"></i> Verificação em duas etapas</a></li>
+            {% if current_user.is_admin %}
+            <li><a class="dropdown-item" href="{{ url_for('auth.backup') }}"><i class="bi bi-cloud-arrow-down"></i> Backup</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('auth.atividades') }}"><i class="bi bi-journal-text"></i> Registro de atividades</a></li>
+            {% endif %}
             <li><hr class="dropdown-divider"></li>
             <li>
               <form method="post" action="{{ url_for('auth.logout') }}">
@@ -103,40 +108,7 @@
 </main>
 
 <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
-<script>
-  // Confirmação antes de excluir
-  document.addEventListener('submit', function (e) {
-    const msg = e.target.dataset.confirmar;
-    if (msg && !confirm(msg)) e.preventDefault();
-  });
-  // Troca a lista de categorias conforme entrada/saída
-  document.querySelectorAll('[data-categorias]').forEach(function (sel) {
-    const tipo = document.querySelector(sel.dataset.categorias);
-    const atualizar = function () {
-      const t = tipo.type === 'radio' ? document.querySelector(sel.dataset.categorias + ':checked').value : tipo.value;
-      sel.querySelectorAll('optgroup').forEach(function (g) {
-        const mostra = g.dataset.tipo === t;
-        g.hidden = !mostra; g.disabled = !mostra;
-      });
-      const atual = sel.selectedOptions[0];
-      if (atual && atual.parentElement.disabled) sel.value = '';
-    };
-    document.querySelectorAll(sel.dataset.categorias).forEach(function (el) { el.addEventListener('change', atualizar); });
-    atualizar();
-  });
-</script>
-<script>
-  // Abas: lembra a aba aberta no endereço (#aba) para voltar a ela depois de salvar ou recarregar.
-  (function () {
-    const abas = document.querySelectorAll('[data-bs-toggle="tab"]');
-    if (!abas.length) return;
-    const alvo = location.hash && document.querySelector('[data-bs-target="' + location.hash + '"]');
-    if (alvo) bootstrap.Tab.getOrCreateInstance(alvo).show();
-    abas.forEach(function (a) {
-      a.addEventListener('shown.bs.tab', function () { history.replaceState(null, '', a.dataset.bsTarget); });
-    });
-  })();
-</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

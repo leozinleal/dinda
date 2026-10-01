@@ -18,6 +18,14 @@ Outros recursos:
 - **Busca de documentos**: o campo no topo procura em todos os documentos de todas as áreas.
 - **Envio de vários arquivos de uma vez**: é possível anexar vários arquivos de uma só vez em qualquer área.
 - **Usuários**: cada pessoa tem o seu próprio login.
+- **Segurança**:
+  - verificação em duas etapas com app autenticador;
+  - bloqueio depois de várias tentativas de senha erradas;
+  - senha forte obrigatória;
+  - saída automática depois de 60 minutos sem uso;
+  - registro de atividades (quem fez o quê e quando);
+  - backup completo com um clique;
+  - proteções do navegador (CSP, cookies seguros, HSTS).
 - **Atualização**: quando o sistema é atualizado, o banco de dados é ajustado sozinho e os dados antigos continuam lá.
 
 ## Como rodar
@@ -58,7 +66,7 @@ Tudo fica na pasta `instance/`:
 
 - **Na mesma rede (escritório)**: inicie com `HOST=0.0.0.0` (Windows: `set HOST=0.0.0.0` antes de rodar) e
   acesse `http://IP-DO-COMPUTADOR:8000` pelos outros aparelhos.
-- **Pela internet**: publique em um servidor (VPS, Render, Railway, PythonAnywhere etc.) atrás de HTTPS.
+- **Pela internet**: siga o guia **[PUBLICAR.md](PUBLICAR.md)**. Ele usa um instalador automático para um servidor Ubuntu, com HTTPS, firewall e backup diário. Se preferir instalar à mão, use HTTPS.
   Variáveis de ambiente aceitas:
   - `SECRET_KEY`: chave secreta das sessões.
   - `DATABASE_URL`: por exemplo, um PostgreSQL. O padrão é SQLite em `instance/`.

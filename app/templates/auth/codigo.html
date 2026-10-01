@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block title %}Código de verificação{% endblock %}
+{% block content %}
+<div class="login-box">
+  <div class="text-center mb-4">
+    <i class="bi bi-shield-lock display-4 text-primary"></i>
+    <h1 class="h4 mt-2">Verificação em duas etapas</h1>
+    <p class="text-muted">Abra o app autenticador no celular e digite o código de 6 dígitos.</p>
+  </div>
+  <div class="card"><div class="card-body p-4">
+    <form method="post">
+      {{ csrf() }}
+      <div class="mb-3"><input class="form-control form-control-lg text-center" name="codigo" inputmode="numeric"
+        autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="000000" required autofocus></div>
+      <button class="btn btn-primary w-100">Entrar</button>
+    </form>
+    <div class="text-center mt-3"><a class="small" href="{{ url_for('auth.login') }}">Voltar</a></div>
+  </div></div>
+</div>
+{% endblock %}

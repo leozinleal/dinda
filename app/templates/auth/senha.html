@@ -6,7 +6,9 @@
   <form method="post">
     {{ csrf() }}
     <div class="mb-3"><label class="form-label">Senha atual</label><input type="password" class="form-control" name="atual" required></div>
-    <div class="mb-3"><label class="form-label">Nova senha</label><input type="password" class="form-control" name="nova" minlength="6" required></div>
+    <div class="mb-3"><label class="form-label">Nova senha</label><input type="password" class="form-control" name="nova" minlength="10" required autocomplete="new-password">
+      <div class="form-text">Mínimo de 10 caracteres, com letras e números.</div></div>
+    <div class="mb-3"><label class="form-label">Repita a nova senha</label><input type="password" class="form-control" name="nova2" minlength="10" required autocomplete="new-password"></div>
     <button class="btn btn-primary">Salvar</button>
   </form>
 </div></div>

@@ -5,7 +5,7 @@
   <a class="btn btn-primary" href="{{ url_for('main.obra_form') }}"><i class="bi bi-plus"></i> Nova obra</a>
 </div>
 <form class="filtros row g-2 mb-3">
-  <div class="col-auto"><select class="form-select" name="status" onchange="this.form.submit()">
+  <div class="col-auto"><select class="form-select" name="status" data-autoenviar>
     <option value="">Todos os status</option>
     {% for s in status_opcoes %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}
   </select></div>

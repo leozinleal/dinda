@@ -1,23 +1,33 @@
 import csv
+import hmac
 import io
 import os
+import shutil
+import tempfile
+import time
 from datetime import date, timedelta
 
 from flask import (
     Blueprint, Response, abort, current_app, flash, redirect, render_template,
-    request, send_from_directory, url_for,
+    request, send_file, send_from_directory, session, url_for,
 )
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func, or_
 
 from .models import (
     CATEGORIAS_ENTRADA, CATEGORIAS_SAIDA, FORMAS_PAGAMENTO, OBRA_STATUS,
-    CATEGORIAS_DOCUMENTO, Cliente, Contrato, Documento, Empresa, Fornecedor, Funcionario, Lancamento,
+    CATEGORIAS_DOCUMENTO, Atividade, Cliente, Contrato, Documento, Empresa, Fornecedor, Funcionario, Lancamento,
     NotaFiscal, Obra, PagamentoFuncionario, Pedido, PEDIDO_STATUS_FINAIS, Usuario, Venda, db,
 )
 from .utils import (
     cent, formata_data, parse_data, parse_int, parse_valor, remover_anexo, render_sem_salvar,
     salvar_anexo, url_segura,
+)
+
+from .backup import gerar_backup
+from .seguranca import (
+    login_bloqueado, novo_segredo_totp, qr_totp_svg, registrar_atividade, registrar_tentativa, validar_senha,
+    verificar_totp,
 )
 
 bp_auth = Blueprint("auth", __name__)
@@ -26,16 +36,34 @@ bp_main = Blueprint("main", __name__)
 
 # ---------------------------------------------------------------- Autenticação
 
+def _entrar(u):
+    session.pop("2fa_uid", None)
+    session.pop("2fa_ate", None)
+    session.pop("2fa_next", None)
+    login_user(u)
+    session["ultimo_acesso"] = int(time.time())
+    registrar_tentativa(u.email, True)
+    registrar_atividade("Entrou no sistema")
+
+
 @bp_auth.route("/setup", methods=["GET", "POST"])
 def setup():
     if Usuario.query.count() > 0:
         return redirect(url_for("auth.login"))
+    token_exigido = current_app.config.get("SETUP_TOKEN")
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
         email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "")
-        if not nome or not email or len(senha) < 6:
-            flash("Preencha nome, e-mail e uma senha com pelo menos 6 caracteres.", "danger")
+        erro_senha = validar_senha(senha, email)
+        if token_exigido and not hmac.compare_digest(request.form.get("token", "").strip(), token_exigido):
+            flash("Código de instalação incorreto. Ele aparece no final da instalação do servidor.", "danger")
+        elif not nome or not email:
+            flash("Preencha nome e e-mail.", "danger")
+        elif erro_senha:
+            flash(erro_senha, "danger")
+        elif senha != request.form.get("senha2", senha):
+            flash("As senhas não conferem.", "danger")
         else:
             u = Usuario(nome=nome, email=email, is_admin=True)
             u.set_senha(senha)
@@ -43,10 +71,10 @@ def setup():
             empresa = Empresa.get()
             empresa.razao_social = request.form.get("empresa", "").strip()
             db.session.commit()
-            login_user(u)
-            flash("Bem-vinda! Sistema configurado.", "success")
-            return redirect(url_for("main.dashboard"))
-    return render_template("auth/setup.html")
+            _entrar(u)
+            flash("Bem-vinda! Sistema configurado. Recomendamos ativar a verificação em duas etapas.", "success")
+            return redirect(url_for("auth.seguranca"))
+    return render_template("auth/setup.html", token_exigido=bool(token_exigido))
 
 
 @bp_auth.route("/login", methods=["GET", "POST"])
@@ -55,18 +83,55 @@ def login():
         return redirect(url_for("main.dashboard"))
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
+        if login_bloqueado(email):
+            flash("Muitas tentativas erradas. Por segurança, aguarde 15 minutos e tente de novo.", "danger")
+            return render_template("auth/login.html"), 429
         u = Usuario.query.filter_by(email=email).first()
         if u and u.ativo and u.check_senha(request.form.get("senha", "")):
-            login_user(u, remember=bool(request.form.get("lembrar")))
-            return redirect(url_segura(request.args.get("next")) or url_for("main.dashboard"))
+            destino = url_segura(request.args.get("next"))
+            if u.totp_ativo:
+                session["2fa_uid"] = u.id
+                session["2fa_ate"] = int(time.time()) + 300
+                session["2fa_next"] = destino
+                return redirect(url_for("auth.login_codigo"))
+            _entrar(u)
+            return redirect(destino or url_for("main.dashboard"))
+        registrar_tentativa(email, False)
         flash("E-mail ou senha incorretos.", "danger")
     return render_template("auth/login.html")
+
+
+@bp_auth.route("/login/codigo", methods=["GET", "POST"])
+def login_codigo():
+    """Segunda etapa do login: código de 6 dígitos do app autenticador."""
+    uid = session.get("2fa_uid")
+    if not uid or int(time.time()) > session.get("2fa_ate", 0):
+        session.pop("2fa_uid", None)
+        flash("Entre novamente com e-mail e senha.", "warning")
+        return redirect(url_for("auth.login"))
+    u = db.session.get(Usuario, uid)
+    if request.method == "POST":
+        if login_bloqueado(u.email):
+            flash("Muitas tentativas erradas. Aguarde 15 minutos e tente de novo.", "danger")
+            return render_template("auth/codigo.html"), 429
+        passo = verificar_totp(u.totp_segredo, request.form.get("codigo"), u.totp_ultimo_passo)
+        if passo is not None:
+            u.totp_ultimo_passo = passo
+            db.session.commit()
+            destino = session.get("2fa_next")
+            _entrar(u)
+            return redirect(destino or url_for("main.dashboard"))
+        registrar_tentativa(u.email, False)
+        flash("Código incorreto ou expirado. Confira o app e tente de novo.", "danger")
+    return render_template("auth/codigo.html")
 
 
 @bp_auth.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    registrar_atividade("Saiu do sistema")
     logout_user()
+    session.clear()
     return redirect(url_for("auth.login"))
 
 
@@ -81,8 +146,11 @@ def usuarios():
             email = request.form.get("email", "").strip().lower()
             senha = request.form.get("senha", "")
             nome = request.form.get("nome", "").strip()
-            if not nome or not email or len(senha) < 6:
-                flash("Preencha nome, e-mail e senha (mínimo 6 caracteres).", "danger")
+            erro_senha = validar_senha(senha, email)
+            if not nome or not email:
+                flash("Preencha nome e e-mail.", "danger")
+            elif erro_senha:
+                flash(erro_senha, "danger")
             elif Usuario.query.filter_by(email=email).first():
                 flash("Já existe um usuário com esse e-mail.", "danger")
             else:
@@ -107,16 +175,115 @@ def usuarios():
 @login_required
 def minha_senha():
     if request.method == "POST":
+        nova = request.form.get("nova", "")
+        erro = validar_senha(nova, current_user.email)
         if not current_user.check_senha(request.form.get("atual", "")):
             flash("Senha atual incorreta.", "danger")
-        elif len(request.form.get("nova", "")) < 6:
-            flash("A nova senha precisa ter pelo menos 6 caracteres.", "danger")
+        elif erro:
+            flash(erro, "danger")
+        elif nova != request.form.get("nova2", nova):
+            flash("As senhas novas não conferem.", "danger")
         else:
-            current_user.set_senha(request.form["nova"])
+            current_user.set_senha(nova)
             db.session.commit()
+            registrar_atividade("Alterou a senha")
             flash("Senha alterada.", "success")
             return redirect(url_for("main.dashboard"))
     return render_template("auth/senha.html")
+
+
+@bp_auth.route("/seguranca", methods=["GET", "POST"])
+@login_required
+def seguranca():
+    """Ativar / desativar a verificação em duas etapas."""
+    u = current_user
+    if request.method == "POST":
+        acao = request.form.get("acao")
+        if acao == "ativar" and not u.totp_ativo:
+            segredo = session.get("totp_novo")
+            passo = verificar_totp(segredo, request.form.get("codigo"))
+            if passo is None:
+                flash("Código incorreto. Confira se o horário do celular está automático e tente de novo.", "danger")
+            else:
+                u.totp_segredo, u.totp_ativo, u.totp_ultimo_passo = segredo, True, passo
+                session.pop("totp_novo", None)
+                db.session.commit()
+                registrar_atividade("Ativou a verificação em duas etapas")
+                flash("Verificação em duas etapas ativada! A partir de agora o login pede o código do app.", "success")
+                return redirect(url_for("auth.seguranca"))
+        elif acao == "desativar" and u.totp_ativo:
+            if not u.check_senha(request.form.get("senha", "")):
+                flash("Senha incorreta.", "danger")
+            elif verificar_totp(u.totp_segredo, request.form.get("codigo")) is None:
+                flash("Código incorreto.", "danger")
+            else:
+                u.totp_segredo, u.totp_ativo, u.totp_ultimo_passo = None, False, None
+                db.session.commit()
+                registrar_atividade("Desativou a verificação em duas etapas")
+                flash("Verificação em duas etapas desativada.", "warning")
+                return redirect(url_for("auth.seguranca"))
+    qr = segredo = None
+    if not u.totp_ativo:
+        segredo = session.get("totp_novo") or novo_segredo_totp()
+        session["totp_novo"] = segredo
+        emissor = (Empresa.get().nome_fantasia or Empresa.get().razao_social or "Construtora")[:40]
+        qr = qr_totp_svg(segredo, u.email, emissor)
+    return render_template("auth/seguranca.html", qr=qr, segredo=segredo)
+
+
+@bp_auth.route("/atividades")
+@login_required
+def atividades():
+    if not current_user.is_admin:
+        abort(403)
+    busca = request.args.get("busca", "")
+    q = Atividade.query
+    if busca:
+        like = f"%{busca}%"
+        q = q.filter(or_(Atividade.acao.ilike(like), Atividade.detalhe.ilike(like), Atividade.usuario.ilike(like)))
+    return render_template("auth/atividades.html", atividades=q.order_by(Atividade.id.desc()).limit(500).all(),
+                           busca=busca)
+
+
+@bp_auth.route("/backup")
+@login_required
+def backup():
+    if not current_user.is_admin:
+        abort(403)
+    pasta = current_app.config.get("BACKUP_FOLDER")
+    existentes = []
+    if pasta and os.path.isdir(pasta):
+        for nome in sorted(os.listdir(pasta), reverse=True):
+            if nome.startswith("backup-") and nome.endswith(".zip"):
+                existentes.append((nome, os.path.getsize(os.path.join(pasta, nome))))
+    return render_template("auth/backup.html", existentes=existentes[:60])
+
+
+@bp_auth.route("/backup/baixar", methods=["POST"])
+@login_required
+def backup_baixar():
+    """Gera um backup na hora e baixa (banco + todos os anexos)."""
+    if not current_user.is_admin:
+        abort(403)
+    tmp = tempfile.mkdtemp()
+    caminho = gerar_backup(current_app, tmp)
+    registrar_atividade("Baixou um backup completo")
+    resp = send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
+    resp.call_on_close(lambda: shutil.rmtree(tmp, ignore_errors=True))
+    return resp
+
+
+@bp_auth.route("/backup/arquivo/<nome>")
+@login_required
+def backup_arquivo(nome):
+    if not current_user.is_admin:
+        abort(403)
+    pasta = current_app.config.get("BACKUP_FOLDER")
+    nome = os.path.basename(nome)
+    if not pasta or not (nome.startswith("backup-") and nome.endswith(".zip")):
+        abort(404)
+    registrar_atividade("Baixou um backup", nome)
+    return send_from_directory(pasta, nome, as_attachment=True)
 
 
 # ---------------------------------------------------------------- Helpers

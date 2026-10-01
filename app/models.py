@@ -39,6 +39,9 @@ class Usuario(UserMixin, db.Model):
     senha_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     ativo = db.Column(db.Boolean, default=True)
+    totp_segredo = db.Column(db.String(64))  # verificação em duas etapas (app autenticador)
+    totp_ativo = db.Column(db.Boolean, default=False)
+    totp_ultimo_passo = db.Column(db.Integer)  # impede reutilizar o mesmo código
 
     def set_senha(self, senha):
         self.senha_hash = generate_password_hash(senha)
@@ -49,6 +52,27 @@ class Usuario(UserMixin, db.Model):
     @property
     def is_active(self):
         return self.ativo
+
+
+class TentativaLogin(db.Model):
+    """Usada para bloquear tentativas repetidas de adivinhar a senha."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    ip = db.Column(db.String(64), index=True)
+    email = db.Column(db.String(120), index=True)
+    sucesso = db.Column(db.Boolean, default=False)
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
+class Atividade(db.Model):
+    """Registro de quem fez o quê e quando (entradas, alterações, exclusões, backups...)."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, index=True)
+    usuario = db.Column(db.String(120), default="")
+    ip = db.Column(db.String(64), default="")
+    acao = db.Column(db.String(120), default="")
+    detalhe = db.Column(db.String(500), default="")
 
 
 class Empresa(db.Model):
