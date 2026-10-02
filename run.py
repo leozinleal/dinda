@@ -14,4 +14,5 @@ if __name__ == "__main__":
         from waitress import serve
 
         print(f"Sistema rodando em http://{'localhost' if host == '127.0.0.1' else host}:{port}")
-        serve(app, host=host, port=port)
+        # 8 linhas de atendimento: o navegador pede vários arquivos (CSS, ícones, JS) ao mesmo tempo
+        serve(app, host=host, port=port, threads=8)
